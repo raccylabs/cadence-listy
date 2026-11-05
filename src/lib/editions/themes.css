@@ -1,0 +1,42 @@
+/* Special edition themes. Fully separate from the app's cards and manual styles: nothing here
+   reads app tokens, and each theme only sets the variables below. */
+.edition {
+	--ed-bg: #fff;
+	--ed-card: #fff;
+	--ed-text: #222;
+	--ed-muted: #666;
+	--ed-line: #e6e6e6;
+	--ed-tint: #f5f5f5;
+	--ed-tint-2: #eee;
+	--ed-feature: #c00;
+	--ed-on-feature: #fff;
+	--ed-stripe: #fff;
+	--ed-display: 'Inter Tight Variable', system-ui, sans-serif;
+	--ed-body: 'Inter Tight Variable', system-ui, sans-serif;
+}
+
+.edition[data-edition='christmas'] {
+	--ed-bg: #fff;
+	--ed-text: #1f1416;
+	--ed-muted: #6b5d60;
+	--ed-line: #eee3e4;
+	--ed-tint: #fff0f0;
+	--ed-tint-2: #ffe3e4;
+	--ed-feature: #d3102b;
+	--ed-stripe: #ffffff;
+}
+
+.edition[data-edition='birthday'] {
+	--ed-bg: #fff;
+	--ed-text: #24141f;
+	--ed-muted: #6f5a68;
+	--ed-line: #f0e2ea;
+	--ed-tint: #fff0f6;
+	--ed-tint-2: #ffe1ed;
+	--ed-feature: #c2185b;
+	--ed-stripe: #ffffff;
+}
+
+html:has(.edition[data-edition]) {
+	background: #fff;
+}
