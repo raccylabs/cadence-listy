@@ -77,10 +77,7 @@
 				<div class="words">
 					<h1>{list.title}</h1>
 					{#if list.message}<p class="msg">{list.message}</p>{/if}
-					<div class="hero-row">
-						{#if options.countdown}<Countdown days={list.days} {edition} />{/if}
-						<a class="cta" href="#note">Leave a note</a>
-					</div>
+					{#if options.countdown}<Countdown days={list.days} {edition} />{/if}
 				</div>
 				<div class="art" class:pic={bannerImage}>
 					{#if bannerImage}
@@ -139,7 +136,7 @@
 				{/each}
 			</ul>
 
-			<section class="foot" id="note">
+			<section class="foot">
 				<div>
 					<h2>Leave a note</h2>
 					<p>Only the owner of this list will see it.</p>
@@ -221,28 +218,11 @@
 		max-width: 44ch;
 		font-size: 17px;
 	}
-	.hero-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 12px;
-	}
-	.cta,
 	.buy {
 		font-family: var(--ed-mono);
 		font-weight: 700;
 		text-decoration: none;
 		text-transform: uppercase;
-	}
-	.cta {
-		padding: 11px 18px;
-		background: #000;
-		color: #fff;
-		font-size: 14px;
-	}
-	.cta:hover {
-		background: var(--ed-pop-1);
-		color: #000;
 	}
 	.art {
 		position: relative;

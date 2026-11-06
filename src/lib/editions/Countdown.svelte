@@ -8,7 +8,7 @@
 		<p class="today">{edition.eventDay}</p>
 	{:else}
 		<p class="num">{days}</p>
-		<p class="label">{days === 1 ? 'sleep' : 'sleeps'} until {edition.eventName}</p>
+		<p class="label">{days === 1 ? 'day' : 'days'} until {edition.eventName}</p>
 	{/if}
 	<div class="spot"><Spot name={edition.countdownSpot} /></div>
 </aside>
