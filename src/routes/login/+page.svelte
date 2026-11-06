@@ -43,8 +43,9 @@
 	}
 	h1 {
 		margin: 0 0 16px;
-		font-size: 34px;
-		font-weight: 800;
-		letter-spacing: -0.03em;
+		font-family: 'Anton', Impact, sans-serif;
+		font-size: 44px;
+		font-weight: 400;
+		text-transform: uppercase;
 	}
 </style>

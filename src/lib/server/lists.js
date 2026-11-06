@@ -197,41 +197,15 @@ async function itemPhoto(env, list, f) {
 	return image ? { photo: await saveImage(env, list, image.bytes, image.type) } : { photo: null, photoFailed: true };
 }
 
-// Unsplash serves these to visitors directly, so nothing is stored. Only its own image hosts
-// are allowed, so a list can't be made to load something from just anywhere.
-const IMAGE_HOSTS = new Set(['images.unsplash.com', 'plus.unsplash.com']);
-
-function bannerLink(raw) {
-	let u;
-	try {
-		u = new URL(raw);
-	} catch {
-		bad('That does not look like an image link.');
-	}
-	if (u.hostname === 'unsplash.com' || u.hostname === 'www.unsplash.com')
-		bad('That is the Unsplash page, not the image. Right-click the photo and copy the image address.');
-	if (u.protocol !== 'https:' || !IMAGE_HOSTS.has(u.hostname)) bad('Links work for Unsplash images only.');
-	u.searchParams.set('w', '2000');
-	u.searchParams.set('q', '80');
-	u.searchParams.set('auto', 'format');
-	return u.href;
-}
-
 export async function setBanner(env, list, f) {
-	const link = str(f.get('banner_url'), 2000);
 	const image = await storeImage(env, list, f.get('banner'));
-	const url = !image && link ? bannerLink(link) : '';
-	if (!image && !url) bad('Choose an image or paste an Unsplash image link.');
-	await run(
-		env,
-		'UPDATE lists SET banner_key = ?, banner_size = ?, banner_url = ?, banner_v = banner_v + 1 WHERE id = ?',
-		image?.key ?? null, image?.size ?? 0, url, list.id
-	);
+	if (!image) bad('Choose an image.');
+	await run(env, 'UPDATE lists SET banner_key = ?, banner_size = ?, banner_v = banner_v + 1 WHERE id = ?', image.key, image.size, list.id);
 	await dropImages(env, [list.banner_key]);
 }
 
 export async function removeBanner(env, list) {
-	await run(env, "UPDATE lists SET banner_key = NULL, banner_size = 0, banner_url = '', banner_v = banner_v + 1 WHERE id = ?", list.id);
+	await run(env, 'UPDATE lists SET banner_key = NULL, banner_size = 0, banner_v = banner_v + 1 WHERE id = ?', list.id);
 	await dropImages(env, [list.banner_key]);
 }
 
@@ -352,7 +326,6 @@ export async function publicList(env, list, now) {
 		days: daysUntil(list.event_date, now),
 		now,
 		banner: list.banner_key ? list.banner_v : 0,
-		bannerUrl: list.banner_url,
 		options: readOptions(list),
 		items: (await listItems(env, list)).map(({ id, tier, title, url, price, store, details, featured, photo_v, has_photo }) => ({
 			id, tier, title, url, price, store, details, featured: !!featured, photo: has_photo ? photo_v : 0

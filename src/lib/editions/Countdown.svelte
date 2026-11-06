@@ -1,50 +1,52 @@
 <script>
+	import Spot from './Spot.svelte';
 	let { days, edition } = $props();
 </script>
 
-<div class="count">
+<aside class="count">
 	{#if days <= 0}
 		<p class="today">{edition.eventDay}</p>
 	{:else}
 		<p class="num">{days}</p>
 		<p class="label">{days === 1 ? 'sleep' : 'sleeps'} until {edition.eventName}</p>
 	{/if}
-</div>
+	<div class="spot"><Spot name={edition.countdownSpot} /></div>
+</aside>
 
 <style>
 	p {
 		margin: 0;
 	}
 	.count {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 		box-sizing: border-box;
-		width: 176px;
-		padding: 16px;
-		border-radius: 18px;
-		background: #fff;
-		color: var(--ed-text);
-		text-align: center;
-		box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.4);
+		padding: 8px 14px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-pop-3);
+		color: #000;
 	}
 	.num {
-		color: var(--ed-feature);
 		font-family: var(--ed-display);
-		font-size: 68px;
-		font-weight: 800;
-		line-height: 1;
-		letter-spacing: -0.04em;
-		font-variant-numeric: tabular-nums;
+		font-size: 52px;
+		line-height: 1.05;
 	}
 	.label {
-		margin-top: 4px;
-		font-size: 15px;
-		font-weight: 600;
-		line-height: 1.2;
+		max-width: 11ch;
+		font: 700 12px/1.25 var(--ed-mono);
+		text-transform: uppercase;
 	}
 	.today {
-		color: var(--ed-feature);
 		font-family: var(--ed-display);
-		font-size: 26px;
-		font-weight: 800;
+		font-size: 28px;
 		line-height: 1.1;
+		text-transform: uppercase;
+	}
+	.spot {
+		flex: none;
+		width: 52px;
+		height: 52px;
 	}
 </style>

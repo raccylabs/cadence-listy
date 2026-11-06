@@ -1,5 +1,6 @@
 <script>
 	import { EDITION_LIST, EDITIONS } from '$lib/editions/index.js';
+	import Spot from '$lib/editions/Spot.svelte';
 	let { data, form } = $props();
 	const status = (l) => (!l.share_on ? 'Link off' : l.event_date < data.today ? 'Closed' : 'Link on');
 </script>
@@ -27,6 +28,7 @@
 	{#each EDITION_LIST as ed (ed.id)}
 		<form method="POST" action="?/create" class="pick">
 			<input type="hidden" name="edition" value={ed.id} />
+			<div class="pic"><Spot name={ed.countdownSpot} /></div>
 			<strong>{ed.name}</strong>
 			<p class="small muted">{ed.blurb}</p>
 			{#if !ed.date}
@@ -49,7 +51,7 @@
 		align-items: center;
 		gap: 12px;
 		padding: 12px;
-		border: 1px solid var(--border);
+		border: 2px solid var(--border);
 		border-radius: var(--radius);
 		color: var(--fg);
 		text-decoration: none;
@@ -75,8 +77,20 @@
 		align-items: flex-start;
 		gap: 8px;
 		padding: 14px;
-		border: 1px solid var(--border);
+		border: 2px solid var(--border);
 		border-radius: var(--radius);
+	}
+	.pick {
+		position: relative;
+		background: #fff;
+		--ed-pop-1: #f0484b;
+		--ed-pop-2: #2fae84;
+		--ed-pop-3: #ffc900;
+		--ed-pop-4: #b8dcf0;
+	}
+	.pic {
+		width: 72px;
+		height: 72px;
 	}
 	.pick p {
 		margin: 0;

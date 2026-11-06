@@ -21,23 +21,22 @@
 		min-height: 100vh;
 		padding: 24px;
 		box-sizing: border-box;
-		background: var(--ed-bg);
-		color: var(--ed-text);
+		background: var(--ed-paper);
+		color: #000;
 		font-family: var(--ed-body);
 		text-align: center;
 	}
 	h1 {
-		margin: 0 0 8px;
+		margin: 0 0 10px;
 		font-family: var(--ed-display);
-		font-size: 40px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		line-height: 1.1;
+		font-size: 56px;
+		font-weight: 400;
+		line-height: 1.05;
+		text-transform: uppercase;
 	}
 	p {
 		max-width: 34ch;
 		margin: 0;
-		color: var(--ed-muted);
 		font-size: 18px;
 	}
 </style>

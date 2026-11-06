@@ -5,6 +5,8 @@
 	import Decor from '$lib/editions/Decor.svelte';
 	import Countdown from '$lib/editions/Countdown.svelte';
 	import Advent from '$lib/editions/Advent.svelte';
+	import Scene from '$lib/editions/Scene.svelte';
+	import Spot from '$lib/editions/Spot.svelte';
 
 	let { data, form } = $props();
 
@@ -20,14 +22,15 @@
 		// The top pick leads the board.
 		return options.spotlight ? [...items].sort((a, b) => Number(b.featured) - Number(a.featured)) : items;
 	});
-	// If a linked image is gone, fall back to the standard banner.
-	let bannerFailed = $state(false);
-	const bannerImage = $derived(
-		!list || bannerFailed ? '' : list.bannerUrl || (list.banner ? `/share/${page.params.token}/banner?v=${list.banner}` : '')
-	);
-	/** The image can fail before the page's code starts, so check once on mount too. */
-	const watchBanner = (img) => {
-		if (img.complete && img.naturalWidth === 0) bannerFailed = true;
+	const bannerImage = $derived(list?.banner ? `/share/${page.params.token}/banner?v=${list.banner}` : '');
+
+	// One pop-up serves every item's note.
+	let noteBox = $state();
+	let noteItem = $state(null);
+	const openNote = (item) => {
+		noteItem = item;
+		form = null;
+		noteBox.showModal();
 	};
 	const photo = (item) => `/share/${page.params.token}/photo/${item.id}?v=${item.photo}`;
 </script>
@@ -56,17 +59,13 @@
 <div class="edition ed-root" data-edition={edition.id}>
 	{#if data.locked}
 		<main class="lock">
-			<div class="banner">
-				<div class="words">
-					<h1>{edition.name} list</h1>
-					<p>Enter the PIN to open this list.</p>
-					<form method="POST" action="?/unlock" use:enhance>
-						<input name="pin" type="password" inputmode="numeric" autocomplete="off" pattern="\d*" maxlength="8" required aria-label="PIN" />
-						<button>Open list</button>
-					</form>
-					{#if form?.pinError}<p class="err" role="alert">{form.pinError}</p>{/if}
-				</div>
-			</div>
+			<h1>{edition.name} list</h1>
+			<p>Enter the PIN to open this list.</p>
+			<form method="POST" action="?/unlock" use:enhance>
+				<input name="pin" type="password" inputmode="numeric" autocomplete="off" pattern="\d*" maxlength="8" required aria-label="PIN" />
+				<button>Open list</button>
+			</form>
+			{#if form?.pinError}<p class="err" role="alert">{form.pinError}</p>{/if}
 		</main>
 	{:else}
 		<Decor edition={edition.id} {options} part="fall" />
@@ -74,19 +73,25 @@
 			{#if data.isOwner}
 				<p class="preview">This is how your list looks to visitors. <a href="/lists/{data.ownerListId}">Back to editing</a></p>
 			{/if}
-			<header class="banner" class:pic={bannerImage}>
-				{#if bannerImage}
-					<img class="bg" src={bannerImage} alt="" referrerpolicy="no-referrer" use:watchBanner onerror={() => (bannerFailed = true)} />
-				{:else if options.stripes}
-					<div class="stripes" aria-hidden="true"></div>
-				{/if}
-				<Decor edition={edition.id} {options} part="string" />
+			<header class="banner">
 				<div class="words">
 					<h1>{list.title}</h1>
 					{#if list.message}<p class="msg">{list.message}</p>{/if}
+					<div class="hero-row">
+						{#if options.countdown}<Countdown days={list.days} {edition} />{/if}
+						<a class="cta" href="#note">Leave a note</a>
+					</div>
 				</div>
-				{#if options.countdown}<div class="tag"><Countdown days={list.days} {edition} /></div>{/if}
+				<div class="art" class:pic={bannerImage}>
+					{#if bannerImage}
+						<img class="bg" src={bannerImage} alt="" />
+					{:else}
+						<Scene edition={edition.id} />
+					{/if}
+					<Decor edition={edition.id} {options} part="string" />
+				</div>
 			</header>
+			{#if options.stripes}<div class="stripes" aria-hidden="true"></div>{/if}
 
 			{#if shelves.length > 1}
 				<div class="pills" role="group" aria-label="Filter the list">
@@ -97,48 +102,59 @@
 				</div>
 			{/if}
 
-			{#if board.length}
-				<div class="catalog">
-					{#each board as item (item.id)}
-						<article class="product">
-							<div class="shot">
-								{#if item.photo}
-									<img src={photo(item)} alt={item.title} loading="lazy" />
-								{:else}
-									<div class="blank" aria-hidden="true"></div>
-								{/if}
-								{#if item.featured && options.spotlight}<span class="badge">Top pick</span>{/if}
+			<div class="catalog">
+				{#each board as item (item.id)}
+					<article class="product" class:top={item.featured && options.spotlight}>
+						<div class="shot">
+							{#if item.photo}
+								<img src={photo(item)} alt={item.title} loading="lazy" />
+							{:else}
+								<div class="blank"><Spot name={edition.spots[item.id % edition.spots.length]} /></div>
+							{/if}
+							{#if item.featured && options.spotlight}<p class="badge">Top pick</p>{/if}
+						</div>
+						<div class="text">
+							<h2>{item.title}</h2>
+							{#if item.price}<p class="price">{item.price}</p>{/if}
+							{#if item.store}<p class="store">{item.store}</p>{/if}
+							{#if item.details}<p class="fine">{item.details}</p>{/if}
+							<div class="acts">
+								{#if item.url}<a class="buy" href={item.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
+								<button type="button" class="note-link" onclick={() => openNote(item)}>Leave a note</button>
 							</div>
-							<div class="text">
-								{#if item.price}<p class="price">{item.price}</p>{/if}
-								<h2>{item.title}</h2>
-								{#if item.store}<p class="fine">at {item.store}</p>{/if}
-								{#if item.details}<p class="fine">{item.details}</p>{/if}
-								<div class="acts">
-									{#if item.url}<a class="buy" href={item.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
-									<details open={form?.noted === `item-${item.id}`}>
-										<summary>Leave a note</summary>
-										{@render noteForm(item)}
-									</details>
-								</div>
-							</div>
-						</article>
-					{/each}
-				</div>
-			{:else}
-				<p class="empty">Nothing on this list yet. Check back soon.</p>
+						</div>
+					</article>
+				{:else}
+					<p class="empty">Nothing on this list yet. Check back soon.</p>
+				{/each}
+			</div>
+
+			{#if options.advent}
+				<div class="panel"><Advent items={list.items} now={list.now} year={list.event_date.slice(0, 4)} /></div>
 			{/if}
 
-			<div class="lower" class:solo={!options.advent}>
-				<section class="panel foot">
+			<ul class="vignettes" aria-hidden="true">
+				{#each edition.vignettes as spot}
+					<li><div class="disc"><Spot name={spot} /></div></li>
+				{/each}
+			</ul>
+
+			<section class="foot" id="note">
+				<div>
 					<h2>Leave a note</h2>
-					<p class="fine">Only the owner of this list will see it.</p>
-					{@render noteForm(null)}
-				</section>
-				{#if options.advent}
-					<div class="panel"><Advent items={list.items} now={list.now} year={list.event_date.slice(0, 4)} /></div>
+					<p>Only the owner of this list will see it.</p>
+					<div class="letter"><Spot name="letter" /></div>
+				</div>
+				{@render noteForm(null)}
+			</section>
+			<dialog bind:this={noteBox} class="note-box" aria-label="Leave a note">
+				{#if noteItem}
+					<h2>Leave a note</h2>
+					<p class="about">About {noteItem.title}</p>
+					{@render noteForm(noteItem)}
+					<button type="button" class="close" onclick={() => noteBox.close()}>Close</button>
 				{/if}
-			</div>
+			</dialog>
 		</main>
 	{/if}
 </div>
@@ -152,8 +168,8 @@
 		position: relative;
 		box-sizing: border-box;
 		min-height: 100vh;
-		background: var(--ed-bg);
-		color: var(--ed-text);
+		background: var(--ed-paper);
+		color: #000;
 		font-family: var(--ed-body);
 		font-size: 16px;
 		line-height: 1.45;
@@ -168,45 +184,76 @@
 	.wrap {
 		position: relative;
 		box-sizing: border-box;
-		max-width: 1240px;
+		max-width: 1180px;
 		margin: 0 auto;
-		padding: 20px 24px 56px;
+		padding: 20px 24px 40px;
 	}
 	.preview {
 		margin-bottom: 12px;
-		color: var(--ed-muted);
-		font-size: 14px;
-	}
-	.preview a {
-		text-decoration: underline;
+		font: 400 13px var(--ed-mono);
 	}
 	.banner {
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 32px;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		overflow: hidden;
-		min-height: 260px;
-		box-sizing: border-box;
-		border: 2px solid var(--ed-feature);
-		border-radius: 24px;
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
+		min-height: 360px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-card);
 	}
-	.stripes {
-		position: absolute;
-		inset: 0;
-		background: repeating-linear-gradient(-45deg, var(--ed-stripe) 0 30px, var(--ed-feature) 30px 60px);
-		/* A straight cut that runs the same way as the stripes. */
-		-webkit-mask-image: linear-gradient(135deg, transparent 62%, #000 62%);
-		mask-image: linear-gradient(135deg, transparent 62%, #000 62%);
+	.words {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 16px;
+		padding: 36px;
 	}
-	/* White bulbs vanish on white stripes, so the string stops before them. */
-	.banner:has(.stripes) :global(.string) {
-		right: 40%;
+	h1 {
+		margin: 0;
+		font-family: var(--ed-display);
+		font-size: clamp(50px, 6.6vw, 88px);
+		font-weight: 400;
+		line-height: 1.02;
+		text-transform: uppercase;
 	}
-	/* An uploaded image fills the banner, with a soft shade so the title stays readable. */
+	.msg {
+		max-width: 44ch;
+		font-size: 17px;
+	}
+	.hero-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+	}
+	.cta,
+	.buy {
+		font-family: var(--ed-mono);
+		font-weight: 700;
+		text-decoration: none;
+		text-transform: uppercase;
+	}
+	.cta {
+		padding: 11px 18px;
+		background: #000;
+		color: #fff;
+		font-size: 14px;
+	}
+	.cta:hover {
+		background: var(--ed-pop-1);
+		color: #000;
+	}
+	.art {
+		position: relative;
+		overflow: hidden;
+		min-height: 240px;
+		border-left: 2px solid #000;
+		background: var(--ed-paper);
+	}
+	.art :global(.string) {
+		z-index: 1;
+	}
 	.bg {
 		position: absolute;
 		inset: 0;
@@ -214,145 +261,126 @@
 		height: 100%;
 		object-fit: cover;
 	}
-	.pic {
-		border-color: var(--ed-line);
-		background: #2a1a1c;
-	}
-	.pic::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(90deg, rgba(20, 10, 12, 0.72), rgba(20, 10, 12, 0.3) 55%, rgba(20, 10, 12, 0));
-	}
-	.pic .words,
-	.pic .tag,
-	.pic :global(.string) {
-		z-index: 1;
-	}
-	.pic h1,
-	.pic .msg {
-		text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
-	}
-	.words {
-		position: relative;
-		max-width: 620px;
-		padding: 76px 40px 40px;
-	}
-	h1 {
-		margin: 0;
-		font-family: var(--ed-display);
-		font-size: clamp(34px, 5.2vw, 60px);
-		font-weight: 800;
-		line-height: 1.02;
-		letter-spacing: -0.03em;
-		text-wrap: balance;
-	}
-	.msg {
-		max-width: 46ch;
+	.stripes {
+		height: 18px;
 		margin-top: 12px;
-		font-size: 18px;
-		font-weight: 500;
-	}
-	.tag {
-		position: relative;
-		flex: none;
-		margin: 76px 56px 36px 0;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: repeating-linear-gradient(-45deg, var(--ed-pop-1) 0 14px, #fff 14px 28px);
 	}
 	.pills {
 		display: flex;
 		gap: 8px;
 		overflow-x: auto;
-		margin: 24px 0 20px;
+		margin-top: 12px;
 		padding-bottom: 2px;
 	}
 	.pills button {
 		flex: none;
-		padding: 9px 16px;
-		border: 1.5px solid var(--ed-line);
-		border-radius: 99px;
+		padding: 8px 14px;
+		border: 2px solid #000;
+		border-radius: 6px;
 		background: #fff;
-		color: var(--ed-text);
-		font: 600 15px var(--ed-body);
+		color: #000;
+		font: 700 13px var(--ed-mono);
+		text-transform: uppercase;
 	}
 	.pills button:hover {
-		border-color: var(--ed-feature);
+		background: var(--ed-pop-3);
 	}
-	.pills .on {
-		border-color: var(--ed-feature);
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
+	.pills .on,
+	.pills .on:hover {
+		background: #000;
+		color: #fff;
 	}
+	/* Products on a page: every box is the same size, photo on top and words below. */
 	.catalog {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-		gap: 16px;
-	}
-	.banner + .catalog {
-		margin-top: 24px;
+		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+		grid-auto-rows: 1fr;
+		gap: 12px;
+		margin-top: 12px;
 	}
 	.product {
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
-		border: 1px solid var(--ed-line);
-		border-radius: 18px;
+		box-sizing: border-box;
+		border: 2px solid #000;
+		border-radius: 8px;
 		background: var(--ed-card);
+	}
+	.product.top {
+		background: var(--ed-pop-4);
 	}
 	.shot {
 		position: relative;
-		aspect-ratio: 1;
-		background: var(--ed-tint);
+		flex: none;
+		height: 220px;
+		border-bottom: 2px solid #000;
+		background: #fff;
 	}
-	.shot img,
-	.blank {
+	.shot img {
 		display: block;
+		box-sizing: border-box;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		padding: 10px;
+		object-fit: contain;
 	}
 	.blank {
-		background: repeating-linear-gradient(-45deg, var(--ed-tint) 0 22px, var(--ed-tint-2) 22px 44px);
-	}
-	.badge {
-		position: absolute;
-		top: 12px;
-		left: 12px;
-		padding: 4px 10px;
-		border-radius: 99px;
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
-		font-size: 13px;
-		font-weight: 700;
+		display: grid;
+		place-items: center;
+		box-sizing: border-box;
+		height: 100%;
+		padding: 34px;
+		background: var(--ed-paper);
 	}
 	.text {
 		display: flex;
 		flex: 1;
 		flex-direction: column;
+		min-width: 0;
 		padding: 14px;
 	}
+	.badge {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		padding: 2px 8px;
+		background: #000;
+		color: #fff;
+		font: 700 12px var(--ed-mono);
+		text-transform: uppercase;
+	}
+	.product h2 {
+		display: -webkit-box;
+		overflow: hidden;
+		margin: 0;
+		font-size: 17px;
+		font-weight: 700;
+		line-height: 1.25;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+	}
 	.price {
-		font-size: 22px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		font-variant-numeric: tabular-nums;
+		margin-top: 6px;
+		font: 700 16px var(--ed-mono);
 	}
-	.text h2 {
-		margin: 2px 0 0;
-		font-size: 16px;
-		font-weight: 500;
-		line-height: 1.3;
-	}
-	.fine {
-		margin-top: 2px;
-		color: var(--ed-muted);
-		font-size: 14px;
+	.store {
+		font: 400 13px var(--ed-mono);
+		text-transform: uppercase;
 	}
 	.fine {
 		display: -webkit-box;
 		overflow: hidden;
+		margin-top: 6px;
+		color: var(--ed-muted);
+		font-size: 14px;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
 	}
 	.acts {
 		display: flex;
@@ -364,73 +392,156 @@
 		font-size: 14px;
 	}
 	.buy {
-		padding: 7px 14px;
-		border-radius: 99px;
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
-		font-weight: 700;
-		text-decoration: none;
+		padding: 6px 10px;
+		background: #000;
+		color: #fff;
+		font-size: 12px;
 	}
-	.acts details[open] {
-		flex-basis: 100%;
+	.buy:hover {
+		background: var(--ed-pop-1);
+		color: #000;
 	}
-	summary {
+	.note-link {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #000;
+		font: inherit;
 		text-decoration: underline;
 		text-underline-offset: 3px;
-		cursor: pointer;
-		list-style: none;
 	}
-	summary::-webkit-details-marker {
-		display: none;
+	.note-box {
+		box-sizing: border-box;
+		width: min(440px, calc(100vw - 32px));
+		padding: 22px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-pop-3);
+		color: #000;
+		font-family: var(--ed-body);
 	}
-	.empty {
-		margin-top: 24px;
-		color: var(--ed-muted);
-		font-size: 18px;
+	.note-box::backdrop {
+		background: rgba(0, 0, 0, 0.55);
 	}
-	.lower {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 16px;
-		align-items: start;
-		margin-top: 32px;
-	}
-	.lower.solo {
-		grid-template-columns: minmax(0, 560px);
-	}
-	.panel {
-		padding: 20px;
-		border-radius: 18px;
-		background: var(--ed-tint);
-	}
-	.foot h2 {
+	.note-box h2 {
 		margin: 0;
 		font-family: var(--ed-display);
-		font-size: 22px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
+		font-size: 34px;
+		font-weight: 400;
+		line-height: 1.1;
+		text-transform: uppercase;
+	}
+	.about {
+		margin-bottom: 4px;
+		font-size: 15px;
+	}
+	.close {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		padding: 4px 8px;
+		border: 2px solid #000;
+		background: #fff;
+		color: #000;
+		font: 700 12px var(--ed-mono);
+		text-transform: uppercase;
+	}
+	.empty {
+		padding: 24px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-card);
+		font-size: 18px;
+	}
+	.panel {
+		margin-top: 12px;
+		padding: 18px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-card);
+	}
+	.vignettes {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 12px;
+		margin: 12px 0 0;
+		padding: 20px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-card);
+		list-style: none;
+	}
+	.vignettes li {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 12px;
+	}
+	.disc {
+		box-sizing: border-box;
+		width: 150px;
+		height: 150px;
+		padding: 22px;
+		border: 2px solid #000;
+		border-radius: 50%;
+		background: var(--ed-pop-3);
+	}
+	.vignettes li:nth-child(2) .disc {
+		background: var(--ed-pop-4);
+	}
+	.vignettes li:nth-child(3) .disc {
+		background: var(--ed-pop-2);
+	}
+	.vignettes li:nth-child(4) .disc {
+		background: var(--ed-pop-1);
+	}
+	.letter {
+		width: 120px;
+		height: 120px;
+		margin-top: 8px;
+	}
+	.foot {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 24px;
+		margin-top: 12px;
+		padding: 24px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-pop-1);
+	}
+	.foot h2 {
+		margin: 0 0 4px;
+		font-family: var(--ed-display);
+		font-size: 44px;
+		font-weight: 400;
+		line-height: 1.1;
+		text-transform: uppercase;
 	}
 	.note-form {
 		position: relative;
 		display: grid;
 		gap: 10px;
-		margin-top: 12px;
+		margin-top: 10px;
+	}
+	.foot .note-form {
+		margin-top: 0;
 	}
 	.note-form label {
 		display: grid;
 		gap: 4px;
-		font-size: 14px;
-		font-weight: 600;
+		font: 700 12px var(--ed-mono);
+		text-transform: uppercase;
 	}
 	input,
 	textarea {
 		box-sizing: border-box;
 		width: 100%;
-		padding: 10px 12px;
-		border: 1px solid var(--ed-line);
-		border-radius: 12px;
+		padding: 9px 11px;
+		border: 2px solid #000;
+		border-radius: 6px;
 		background: #fff;
-		color: var(--ed-text);
+		color: #000;
 		font: 400 16px var(--ed-body);
 	}
 	.trap {
@@ -444,15 +555,16 @@
 	.note-form button,
 	.lock button {
 		justify-self: start;
-		padding: 9px 18px;
+		padding: 10px 16px;
 		border: 0;
-		border-radius: 99px;
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
-		font: 700 15px var(--ed-body);
+		border-radius: 0;
+		background: #000;
+		color: #fff;
+		font: 700 13px var(--ed-mono);
+		text-transform: uppercase;
 	}
 	.ed-root :focus-visible {
-		outline: 2px solid var(--ed-text);
+		outline: 3px solid #000;
 		outline-offset: 2px;
 	}
 	.err {
@@ -461,25 +573,20 @@
 	}
 	.sent {
 		margin-top: 8px;
-		color: var(--ed-feature);
-		font-weight: 700;
+		font: 700 14px var(--ed-mono);
 	}
 	.lock {
-		max-width: 440px;
-		margin: 0 auto;
-		padding: 16vh 16px 0;
-	}
-	.lock .banner {
-		min-height: 0;
-	}
-	.lock .words {
-		width: 100%;
 		box-sizing: border-box;
-		padding: 32px;
+		max-width: 440px;
+		margin: 16vh auto 0;
+		padding: 28px;
+		border: 2px solid #000;
+		border-radius: 8px;
+		background: var(--ed-pop-3);
 	}
 	.lock h1 {
 		margin-bottom: 8px;
-		font-size: 34px;
+		font-size: 46px;
 	}
 	.lock form {
 		display: flex;
@@ -492,50 +599,60 @@
 	}
 	.lock button {
 		flex: none;
-		background: #fff;
-		color: var(--ed-feature);
 	}
 	@media (max-width: 760px) {
 		.wrap {
-			padding: 12px 12px 40px;
+			padding: 10px 10px 24px;
 		}
 		.banner {
-			display: block;
+			display: flex;
+			flex-direction: column;
 			min-height: 0;
-			border-radius: 20px;
-		}
-		.pic::after {
-			background: linear-gradient(180deg, rgba(20, 10, 12, 0.72), rgba(20, 10, 12, 0.35));
-		}
-		.stripes {
-			-webkit-mask-image: linear-gradient(135deg, transparent 72%, #000 72%);
-			mask-image: linear-gradient(135deg, transparent 72%, #000 72%);
-		}
-		.banner:has(.stripes) :global(.string) {
-			right: 0;
 		}
 		.words {
-			padding: 70px 20px 18px;
+			padding: 22px 18px;
 		}
-		.msg {
-			font-size: 16px;
-		}
-		.tag {
-			margin: 0 0 18px 20px;
+		.art {
+			height: 210px;
+			min-height: 0;
+			border-top: 2px solid #000;
+			border-left: 0;
 		}
 		.catalog {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 10px;
+			gap: 8px;
+		}
+		.shot {
+			height: 150px;
+		}
+		.blank {
+			padding: 26px;
 		}
 		.text {
 			padding: 10px;
 		}
-		.price {
-			font-size: 19px;
+		.product h2 {
+			font-size: 15px;
 		}
-		.lower,
-		.lower.solo {
+		.fine {
+			font-size: 13px;
+		}
+		.vignettes {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			padding: 14px;
+		}
+		.disc {
+			width: 112px;
+			height: 112px;
+			padding: 16px;
+		}
+		.letter {
+			display: none;
+		}
+		.foot {
 			grid-template-columns: minmax(0, 1fr);
+			gap: 12px;
+			padding: 18px;
 		}
 	}
 </style>

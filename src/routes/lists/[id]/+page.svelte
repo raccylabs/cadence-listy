@@ -43,12 +43,10 @@
 </div>
 
 <div class="Subhead Subhead--spaced"><h2>Banner image</h2></div>
-{#if list.bannerImage}<img class="banner-now" src={list.bannerImage} alt="Current banner" referrerpolicy="no-referrer" />{/if}
+{#if list.bannerImage}<img class="banner-now" src={list.bannerImage} alt="Current banner" />{/if}
 <form method="POST" action="?/setBanner" enctype="multipart/form-data" use:enhance class="banner-form">
 	<label for="banner-file">Upload an image</label>
 	<input id="banner-file" class="form-control" type="file" name="banner" accept="image/*" onchange={(e) => shrinkPhoto(e.currentTarget, 2000)} />
-	<label for="banner-url">Or paste an Unsplash image link</label>
-	<input id="banner-url" class="form-control" name="banner_url" inputmode="url" maxlength="2000" placeholder="https://images.unsplash.com/…" />
 	<div class="row">
 		<button class="btn">{list.bannerImage ? 'Replace banner' : 'Use this banner'}</button>
 	</div>
@@ -56,7 +54,7 @@
 {#if list.bannerImage}
 	<form method="POST" action="?/removeBanner" use:enhance={stay} class="row"><button class="btn">Remove image</button></form>
 {/if}
-<p class="note">{list.bannerImage ? 'Removing it brings back the standard banner.' : `Without an image, your list uses the standard ${edition.name} banner.`} Wide photos work best, and a darker left side keeps your title easy to read.</p>
+<p class="note">{list.bannerImage ? 'Removing it brings back the standard banner.' : `Without an image, your list uses the standard ${edition.name} banner.`} Wide photos work best.</p>
 
 <div class="Subhead Subhead--spaced"><h2>Items</h2></div>
 <ItemForm tiers={edition.tiers} listId={list.id} />
@@ -187,7 +185,7 @@
 	.item {
 		margin-bottom: 8px;
 		padding: 10px;
-		border: 1px solid var(--border);
+		border: 2px solid var(--border);
 		border-radius: var(--radius);
 	}
 	.line {

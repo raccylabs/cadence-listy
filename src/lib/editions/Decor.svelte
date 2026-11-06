@@ -16,9 +16,9 @@
 		{#each Array(24) as _, i}
 			<svg viewBox="0 0 220 64" width="220" height="64">
 				<path d="M0 8 Q110 44 220 8" />
-				<circle class="bulb b{i % 4}" style="--i:{i}; --t:{(i * 7) % 11}" cx="110" cy="33" r="4" />
-				<circle class="bulb b{(i + 2) % 4}" style="--i:{i}; --t:{(i * 5 + 3) % 11}" cx="44" cy="23" r="4" />
-				<circle class="bulb b{(i + 1) % 4}" style="--i:{i}; --t:{(i * 3 + 6) % 11}" cx="176" cy="23" r="4" />
+				<circle class="bulb b{i % 4}" style="--i:{i}; --t:{(i * 7) % 11}" cx="110" cy="33" r="7" />
+				<circle class="bulb b{(i + 2) % 4}" style="--i:{i}; --t:{(i * 5 + 3) % 11}" cx="44" cy="23" r="7" />
+				<circle class="bulb b{(i + 1) % 4}" style="--i:{i}; --t:{(i * 3 + 6) % 11}" cx="176" cy="23" r="7" />
 			</svg>
 		{/each}
 	</div>
@@ -64,15 +64,17 @@
 	}
 	.string path:first-child {
 		fill: none;
-		stroke: color-mix(in srgb, var(--ed-on-feature) 35%, transparent);
-		stroke-width: 1;
+		stroke: #000;
+		stroke-width: 3;
 	}
 	.bulb {
 		fill: var(--c);
-		filter: drop-shadow(0 0 3px var(--c)) drop-shadow(0 0 10px var(--c));
+		stroke: #000;
+		stroke-width: 2;
 	}
-	.b0, .b2 { --c: #fff3cf; }
-	.b1 { --c: #ffd27a; }
+	.b0 { --c: #f0484b; }
+	.b1 { --c: #ffc900; }
+	.b2 { --c: #2fae84; }
 	.b3 { --c: #ffffff; }
 	.twinkle .bulb {
 		animation: glow 3.4s ease-in-out infinite;
@@ -84,12 +86,16 @@
 	}
 	@keyframes glow {
 		50% {
-			opacity: 0.45;
+			opacity: 0.35;
 		}
 	}
-	.flag.f0 { fill: #ffd27a; }
-	.flag.f1 { fill: #ffb3d0; }
-	.flag.f2 { fill: #ffffff; }
+	.flag.f0 { fill: #ffd23f;
+		stroke: #000;
+		stroke-width: 2; }
+	.flag.f1 { fill: #ff7a59;
+		stroke: #000;
+		stroke-width: 2; }
+	.flag.f2 { fill: #ffffff; stroke: #000; stroke-width: 2; }
 
 	.fall {
 		position: fixed;
@@ -104,15 +110,18 @@
 	}
 	.flake {
 		border-radius: 50%;
-		background: #c9d6e2;
-		opacity: 0.8;
+		background: #fff;
+		border: 1px solid #000;
 	}
 	.bit {
 		opacity: 0.6;
 	}
-	.bit.f0 { background: #c98a9b; }
-	.bit.f1 { background: #e0b36a; }
-	.bit.f2 { background: #8f6a9a; }
+	.bit {
+		border: 1px solid #000;
+	}
+	.bit.f0 { background: #ff7a59; }
+	.bit.f1 { background: #ffd23f; }
+	.bit.f2 { background: #27b5b0; }
 	@keyframes fall {
 		to {
 			transform: translate3d(30px, 104vh, 0);

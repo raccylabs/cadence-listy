@@ -5,7 +5,7 @@ Themed wish lists you can share with one link. Make a Christmas or Birthday list
 - Paste a product link to fill in its name, price, description and photo, or upload your own photo
 - Shared lists show nothing else about your account, with an optional PIN
 - Visitors can leave notes that only you can see
-- Countdown, advent calendar, Christmas lights and a custom banner
+- Countdown, advent calendar, drawn illustrations and an optional banner photo
 - The link closes after the big day, and the list and its photos are deleted a week later
 
 It runs entirely on Cloudflare: Workers for the app, D1 for the database and R2 for images.

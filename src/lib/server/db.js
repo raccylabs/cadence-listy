@@ -68,7 +68,8 @@ const MIGRATIONS = [
 			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
 		)`,
 		`CREATE INDEX list_notes_list ON list_notes(list_id, id)`
-	]
+	],
+	[`ALTER TABLE lists DROP COLUMN banner_url`]
 ];
 
 let ready = false;

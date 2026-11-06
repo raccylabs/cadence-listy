@@ -8,17 +8,19 @@ export const EDITIONS = {
 	christmas: {
 		id: 'christmas',
 		name: 'Christmas',
-		blurb: 'A bright holiday catalog in candy-cane red and white, with a countdown to Christmas.',
+		blurb: 'Bold colors, candy-striped ornaments and a countdown to Christmas.',
 		date: { month: 12, day: 25 },
 		listName: 'Christmas Wish List',
 		eventName: 'Christmas',
 		eventDay: 'Merry Christmas!',
 		tiers: ['Top of the list', 'Would love', 'Stocking stuffers'],
-		photoless: 'gift',
+		spots: ['gift', 'stocking', 'cane', 'mug', 'tree', 'snowman'],
+		countdownSpot: 'tree',
+		vignettes: ['stocking', 'snowman', 'cane', 'mug'],
 		decor: [
 			{ id: 'lights', label: 'Christmas lights', on: true, modes: [['twinkle', 'Twinkle'], ['chase', 'Chase'], ['steady', 'Steady']] },
 			{ id: 'snow', label: 'Falling snow', on: false },
-			{ id: 'stripes', label: 'Candy-cane stripes', on: true }
+			{ id: 'stripes', label: 'Candy-cane stripe', on: true }
 		],
 		widgets: [
 			{ id: 'countdown', label: 'Days until Christmas', on: true },
@@ -29,17 +31,19 @@ export const EDITIONS = {
 	birthday: {
 		id: 'birthday',
 		name: 'Birthday',
-		blurb: 'A bright party catalog in raspberry and white, with a countdown to your big day.',
+		blurb: 'Bold colors, balloons and a countdown to your big day.',
 		date: null,
 		listName: 'Birthday Wish List',
 		eventName: 'the big day',
 		eventDay: 'Happy birthday!',
 		tiers: ['Top of the list', 'Would love', 'Little extras'],
-		photoless: 'gift',
+		spots: ['gift', 'cake', 'balloon', 'hat'],
+		countdownSpot: 'cake',
+		vignettes: ['cake', 'hat', 'balloon', 'gift'],
 		decor: [
 			{ id: 'bunting', label: 'String of pennants', on: true },
 			{ id: 'confetti', label: 'Falling confetti', on: false },
-			{ id: 'stripes', label: 'Banner stripes', on: true }
+			{ id: 'stripes', label: 'Color stripe', on: true }
 		],
 		widgets: [
 			{ id: 'countdown', label: 'Days until the big day', on: true },

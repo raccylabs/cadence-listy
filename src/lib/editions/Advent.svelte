@@ -24,46 +24,47 @@
 
 <style>
 	h2 {
-		margin: 0 0 12px;
+		margin: 0 0 14px;
 		font-family: var(--ed-display);
-		font-size: 22px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
+		font-size: 30px;
+		font-weight: 400;
+		line-height: 1.1;
+		text-transform: uppercase;
 	}
 	.doors {
 		display: grid;
-		grid-template-columns: repeat(8, minmax(0, 1fr));
+		grid-template-columns: repeat(12, minmax(0, 1fr));
 		gap: 6px;
 	}
 	button {
 		aspect-ratio: 1;
 		padding: 0;
-		border: 1px solid var(--ed-line);
-		border-radius: 10px;
-		background: transparent;
-		color: var(--ed-text);
-		font: 500 13px var(--ed-body);
-		font-variant-numeric: tabular-nums;
+		border: 2px solid #000;
+		border-radius: 6px;
+		background: #fff;
+		color: #000;
+		font: 700 14px var(--ed-mono);
 		cursor: pointer;
 	}
 	button:disabled {
-		color: var(--ed-muted);
-		opacity: 0.6;
+		background: transparent;
+		opacity: 0.5;
 		cursor: default;
 	}
 	.today {
-		border-color: var(--ed-feature);
-		color: var(--ed-feature);
-		font-weight: 700;
+		background: var(--ed-pop-3);
 	}
 	.open {
-		border-color: var(--ed-feature);
-		background: var(--ed-feature);
-		color: var(--ed-on-feature);
+		background: #000;
+		color: #fff;
 	}
 	p {
 		margin: 12px 0 0;
-		color: var(--ed-muted);
-		font-size: 14px;
+		font: 400 14px var(--ed-mono);
+	}
+	@media (max-width: 640px) {
+		.doors {
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+		}
 	}
 </style>

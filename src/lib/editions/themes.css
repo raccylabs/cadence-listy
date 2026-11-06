@@ -1,42 +1,35 @@
-/* Special edition themes. Fully separate from the app's cards and manual styles: nothing here
-   reads app tokens, and each theme only sets the variables below. */
+/* Edition themes. Each one only sets these variables; layout lives on the share page. */
 .edition {
-	--ed-bg: #fff;
+	--ed-paper: #f6f4ec;
 	--ed-card: #fff;
-	--ed-text: #222;
-	--ed-muted: #666;
-	--ed-line: #e6e6e6;
-	--ed-tint: #f5f5f5;
-	--ed-tint-2: #eee;
-	--ed-feature: #c00;
-	--ed-on-feature: #fff;
-	--ed-stripe: #fff;
-	--ed-display: 'Inter Tight Variable', system-ui, sans-serif;
+	--ed-ink: #000;
+	--ed-muted: #3d3d3a;
+	--ed-pop-1: #e5383b;
+	--ed-pop-1-text: #000;
+	--ed-pop-2: #1f9e74;
+	--ed-pop-3: #ffc900;
+	--ed-pop-4: #b8dcf0;
+	--ed-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+	--ed-mono: 'Space Mono', ui-monospace, monospace;
 	--ed-body: 'Inter Tight Variable', system-ui, sans-serif;
 }
 
 .edition[data-edition='christmas'] {
-	--ed-bg: #fff;
-	--ed-text: #1f1416;
-	--ed-muted: #6b5d60;
-	--ed-line: #eee3e4;
-	--ed-tint: #fff0f0;
-	--ed-tint-2: #ffe3e4;
-	--ed-feature: #d3102b;
-	--ed-stripe: #ffffff;
+	--ed-paper: #f6f4ec;
+	--ed-pop-1: #f0484b;
+	--ed-pop-2: #2fae84;
+	--ed-pop-3: #ffc900;
+	--ed-pop-4: #b8dcf0;
 }
 
 .edition[data-edition='birthday'] {
-	--ed-bg: #fff;
-	--ed-text: #24141f;
-	--ed-muted: #6f5a68;
-	--ed-line: #f0e2ea;
-	--ed-tint: #fff0f6;
-	--ed-tint-2: #ffe1ed;
-	--ed-feature: #c2185b;
-	--ed-stripe: #ffffff;
+	--ed-paper: #f7f2f4;
+	--ed-pop-1: #ff7a59;
+	--ed-pop-2: #27b5b0;
+	--ed-pop-3: #ffd23f;
+	--ed-pop-4: #c9bcff;
 }
 
 html:has(.edition[data-edition]) {
-	background: #fff;
+	background: #f6f4ec;
 }
