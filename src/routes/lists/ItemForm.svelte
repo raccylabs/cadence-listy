@@ -27,8 +27,9 @@
 		try {
 			const res = await fetch(`/lists/${listId}/lookup`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url: f.url.trim() }) });
 			const data = await res.json();
+			f.image = data.found?.image ?? '';
 			if (data.found) {
-				for (const field of ['title', 'store', 'price', 'details', 'image']) if (data.found[field]) f[field] = data.found[field];
+				for (const field of ['title', 'store', 'price', 'details']) if (data.found[field]) f[field] = data.found[field];
 				const missing = ['title', 'price', 'image'].filter((x) => !data.found[x]).map((x) => (x === 'image' ? 'photo' : x === 'title' ? 'name' : x));
 				lookupNote = missing.length ? `Filled in what the store shared. Missing: ${missing.join(', ')}.` : 'Filled in from the store. Check it before saving.';
 			} else {

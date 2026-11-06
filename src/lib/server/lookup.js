@@ -112,7 +112,15 @@ export async function readProduct(response, pageUrl) {
 	let script = '';
 	let title = '';
 	// For stores like Amazon that keep these in the page itself, not in product data.
-	const page = { title: '', salePrice: '', mainPrice: '', price: '', image: '', bullets: [] };
+	const page = { title: '', salePrice: '', mainPrice: '', price: '', landing: '', image: '', bullets: [] };
+	const host = new URL(pageUrl).hostname.replace(/^www\./, '');
+	const amazon = /(^|\.)amazon\./.test(host);
+	// Amazon keeps product photos in /images/I/ and site graphics, like Prime logos, in /images/G/.
+	const isProductImage = (src) => {
+		if (!src || src.startsWith('data:')) return false;
+		if (src.includes('media-amazon.com') || src.includes('ssl-images-amazon.com')) return src.includes('/images/I/');
+		return !amazon && !/(logo|sprite|favicon)/i.test(src);
+	};
 	const firstText = (key) => {
 		let text = '';
 		return {
@@ -126,20 +134,21 @@ export async function readProduct(response, pageUrl) {
 			}
 		};
 	};
-	const imageFrom = (...names) => ({
+	const imageFrom = (slot, ...names) => ({
 		element(e) {
-			if (page.image) return;
+			if (page[slot]) return;
 			for (const name of names) {
-				let value = e.getAttribute(name);
-				if (name === 'data-a-dynamic-image' && value) {
+				let values = [e.getAttribute(name)];
+				if (name === 'data-a-dynamic-image' && values[0]) {
 					try {
-						value = Object.keys(JSON.parse(decode(value)))[0];
+						values = Object.keys(JSON.parse(decode(values[0])));
 					} catch {
-						value = '';
+						values = [];
 					}
 				}
-				if (value && !value.startsWith('data:')) {
-					page.image = value;
+				const hit = values.find(isProductImage);
+				if (hit) {
+					page[slot] = hit;
 					return;
 				}
 			}
@@ -156,11 +165,12 @@ export async function readProduct(response, pageUrl) {
 				if (!page.price && e.getAttribute('content')) page.price = formatPrice(e.getAttribute('content'), meta['product:price:currency']);
 			}
 		})
-		.on('img#landingImage', imageFrom('data-old-hires', 'data-a-dynamic-image', 'src'))
-		.on('img#main-image', imageFrom('data-a-hires', 'src'))
-		.on('img.a-dynamic-image', imageFrom('data-old-hires', 'data-a-dynamic-image', 'src'))
-		.on('[itemprop="image"]', imageFrom('content', 'src', 'href'))
-		.on('link[rel="image_src"]', imageFrom('href'))
+		.on('img#landingImage', imageFrom('landing', 'data-old-hires', 'data-a-dynamic-image', 'src'))
+		.on('img#main-image', imageFrom('landing', 'data-a-hires', 'src'))
+		.on('#imgTagWrapperId img', imageFrom('landing', 'data-old-hires', 'data-a-dynamic-image', 'src'))
+		.on('#imageBlock img', imageFrom('image', 'data-old-hires', 'data-a-dynamic-image', 'src'))
+		.on('[itemprop="image"]', imageFrom('image', 'content', 'src', 'href'))
+		.on('link[rel="image_src"]', imageFrom('image', 'href'))
 		.on('#feature-bullets li span.a-list-item', {
 			text(t) {
 				bullet += t.text;
@@ -191,7 +201,7 @@ export async function readProduct(response, pageUrl) {
 				}
 			}
 		});
-	const enough = () => !!(page.title && page.image && page.salePrice && page.bullets.length);
+	const enough = () => !!(page.title && page.landing && page.salePrice && page.bullets.length);
 	await rewriter.transform(new Response(capped(response.body, MAX_PAGE, enough), { headers: response.headers })).arrayBuffer();
 
 	let product = null;
@@ -205,23 +215,22 @@ export async function readProduct(response, pageUrl) {
 	}
 
 	const { amount, currency } = offerPrice(product?.offers);
-	const image = firstImage(product?.image) || meta['og:image'] || meta['og:image:secure_url'] || meta['twitter:image'] || page.image;
+	const image = [firstImage(product?.image), page.landing, meta['og:image'], meta['og:image:secure_url'], meta['twitter:image'], page.image].map((src) => decode(src ?? '')).find(isProductImage) ?? '';
 	let absolute = '';
 	try {
-		absolute = image ? new URL(decode(image), pageUrl).href : '';
+		absolute = image ? new URL(image, pageUrl).href : '';
 	} catch {
 		// No usable image.
 	}
 	const fullTitle = clean(product?.name) || page.title || clean(meta['og:title']) || clean(meta['twitter:title']) || clean(title);
 	const name = shortTitle(fullTitle);
-	const host = new URL(pageUrl).hostname.replace(/^www\./, '');
 	return {
 		title: name,
 		// The words a long title lost are often the best description a store gives.
 		details: shorten(clean(product?.description) || clean(meta['og:description']) || page.bullets.join(' ') || clean(meta.description) || (name === fullTitle ? '' : fullTitle)),
 		price:
 			formatPrice(amount ?? meta['product:price:amount'] ?? meta['og:price:amount'], currency ?? meta['product:price:currency'] ?? meta['og:price:currency']) || page.salePrice || page.mainPrice || page.price,
-		store: clean(meta['og:site_name']) || (/(^|\.)amazon\./.test(host) ? 'Amazon' : host),
+		store: clean(meta['og:site_name']) || (amazon ? 'Amazon' : host),
 		image: absolute
 	};
 }
