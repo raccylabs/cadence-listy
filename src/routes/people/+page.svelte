@@ -1,10 +1,13 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { EDITIONS } from '$lib/editions/index.js';
 
 	let { data, form } = $props();
 	let copied = $state('');
 	let confirming = $state(0);
 	const link = (token) => `${data.origin}/register?invite=${token}`;
+	const listsOf = (id) => data.lists.filter((l) => l.user_id === id);
+	const STATUS = { open: 'Shared', closed: 'Closed', private: 'Sharing off' };
 	const mb = (bytes) => (bytes / 1048576).toFixed(1);
 
 	async function copy(token) {
@@ -41,7 +44,7 @@
 
 <div class="Subhead Subhead--spaced"><h2>People</h2></div>
 {#each data.people as p (p.id)}
-	<div class="row">
+	<div class="row person">
 		<div class="name">
 			<strong>{p.username}</strong>
 			<span class="small muted">
@@ -61,8 +64,31 @@
 				<button type="button" class="btn btn-sm" onclick={() => (confirming = p.id)}>Remove</button>
 			{/if}
 		{/if}
+		{#if listsOf(p.id).length}
+			<ul class="lists">
+				{#each listsOf(p.id) as l (l.id)}
+					<li>
+						<span class="ltitle">
+							{l.title}
+							<span class="small muted">
+								{EDITIONS[l.edition]?.name}, {l.event_date}, {l.items} {l.items === 1 ? 'item' : 'items'}{l.hasPin ? ', PIN' : ''}
+							</span>
+						</span>
+						<span class="tag {l.status}">{STATUS[l.status]}</span>
+						{#if l.link}
+							<a class="btn btn-sm" href={l.link} target="_blank" rel="noopener">View list</a>
+						{:else}
+							<span class="small muted gone">Can't be viewed</span>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="small muted none">No lists yet.</p>
+		{/if}
 	</div>
 {/each}
+<p class="note">You see each list the way visitors do. Lists with sharing off or past their date can't be opened, a PIN still applies, and notes stay with the owner.</p>
 
 <style>
 	.line {
@@ -90,6 +116,43 @@
 		flex: 1 1 200px;
 		flex-direction: column;
 		min-width: 0;
+	}
+	.lists,
+	.none {
+		flex-basis: 100%;
+		margin: 4px 0 0;
+		padding: 0;
+		list-style: none;
+	}
+	.lists li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 0 0;
+		border-top: 1px solid var(--border);
+		margin-top: 10px;
+	}
+	.ltitle {
+		display: flex;
+		flex: 1 1 220px;
+		flex-direction: column;
+		min-width: 0;
+		font-weight: 600;
+	}
+	.ltitle .small {
+		font-weight: 400;
+	}
+	.tag {
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: #f1e8de;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.tag.open {
+		background: #dcefe4;
+		color: #2f6e50;
 	}
 	.url {
 		flex: 2 1 240px;

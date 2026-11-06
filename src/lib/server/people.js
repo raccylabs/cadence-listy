@@ -2,7 +2,7 @@
 import { one, all, run } from './db.js';
 import { randomToken, getUserById } from './auth.js';
 import { ValidationError } from './errors.js';
-import { deleteUser } from './lists.js';
+import { deleteUser, today, keepUntil } from './lists.js';
 
 export const openInvite = (env, token) => (token ? one(env, 'SELECT token FROM invites WHERE token = ? AND used_at IS NULL', token) : null);
 
@@ -27,6 +27,34 @@ export const allPeople = (env) =>
 			(SELECT COALESCE(SUM(i.photo_size), 0) FROM list_items i JOIN lists l ON l.id = i.list_id WHERE l.user_id = u.id) AS image_bytes
 		 FROM users u ORDER BY u.id`
 	);
+
+/**
+ * Everyone's lists, as a visitor would find them. The share link is only handed out while the
+ * list is open, so the owner's sharing and closing choices still apply. Notes stay private.
+ */
+export async function allLists(env) {
+	const rows = await all(
+		env,
+		`SELECT l.id, l.user_id, l.title, l.edition, l.event_date, l.share_on, l.share_token, l.pin_hash IS NOT NULL AS has_pin,
+			u.timezone, (SELECT COUNT(*) FROM list_items i WHERE i.list_id = l.id) AS items
+		 FROM lists l JOIN users u ON u.id = l.user_id ORDER BY l.event_date, l.id`
+	);
+	return rows.map((l) => {
+		const open = !!l.share_on && today(l) <= l.event_date;
+		return {
+			id: l.id,
+			user_id: l.user_id,
+			title: l.title,
+			edition: l.edition,
+			event_date: l.event_date,
+			items: l.items,
+			hasPin: !!l.has_pin,
+			status: open ? 'open' : l.share_on ? 'closed' : 'private',
+			deletes: keepUntil(l),
+			link: open ? `/share/${l.share_token}` : null
+		};
+	});
+}
 
 /** Remove someone along with their lists and photos. The admin can't be removed. */
 export async function removePerson(env, id) {
