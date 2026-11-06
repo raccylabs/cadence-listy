@@ -135,6 +135,13 @@
 				<div class="panel"><Advent items={list.items} now={list.now} year={list.event_date.slice(0, 4)} /></div>
 			{/if}
 
+			{#if list.items.length}
+				<div class="export">
+					<button type="button" onclick={() => window.print()}>Save as PDF</button>
+					<a href="/share/{page.params.token}/list.csv" download data-sveltekit-reload>Download CSV</a>
+				</div>
+			{/if}
+
 			<ul class="vignettes" aria-hidden="true">
 				{#each edition.vignettes as spot}
 					<li><div class="disc"><Spot name={spot} /></div></li>
@@ -557,6 +564,27 @@
 		border-radius: 8px;
 		background: var(--ed-card);
 	}
+	.export {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 12px;
+	}
+	.export button,
+	.export a {
+		padding: 8px 14px;
+		border: 2px solid #000;
+		border-radius: 6px;
+		background: #fff;
+		color: #000;
+		font: 700 13px var(--ed-mono);
+		text-decoration: none;
+		text-transform: uppercase;
+	}
+	.export button:hover,
+	.export a:hover {
+		background: var(--ed-pop-3);
+	}
 	.vignettes {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -696,6 +724,71 @@
 	}
 	.lock button {
 		flex: none;
+	}
+	/* Save as PDF: a clean printed list, with the extras left out. */
+	@media print {
+		.ed-root {
+			background: #fff;
+		}
+		.wrap {
+			max-width: none;
+			padding: 0;
+		}
+		.banner {
+			display: block;
+			min-height: 0;
+			border: 0;
+		}
+		.words {
+			padding: 0 0 12px;
+		}
+		h1 {
+			font-size: 40px;
+		}
+		.art,
+		.stripes,
+		.pills,
+		.preview,
+		.panel,
+		.export,
+		.vignettes,
+		.foot,
+		.note-link,
+		.note-box,
+		.ed-root :global(.fall),
+		.words :global(.count) {
+			display: none;
+		}
+		.catalog {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			grid-auto-rows: auto;
+			gap: 8px;
+		}
+		.product {
+			break-inside: avoid;
+			animation: none;
+		}
+		.shot {
+			height: 150px;
+		}
+		.fine {
+			display: block;
+			overflow: visible;
+		}
+		.product.top {
+			background: #fff;
+		}
+		.buy {
+			padding: 0;
+			background: none;
+			color: #000;
+			font-size: 10px;
+			text-transform: none;
+			word-break: break-all;
+		}
+		.buy::after {
+			content: ': ' attr(href);
+		}
 	}
 	@media (max-width: 760px) {
 		.wrap {
