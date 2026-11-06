@@ -14,7 +14,7 @@ It runs entirely on Cloudflare: Workers for the app, D1 for the database and R2 
 Everything here is in the [Cloudflare dashboard](https://dash.cloudflare.com).
 
 1. **Create the database.** Go to **Storage & Databases > D1**, create a database named `cadence-listy`, and copy its ID.
-2. **Add the ID to this repo.** In `wrangler.toml`, replace `REPLACE_WITH_YOUR_D1_DATABASE_ID` with that ID and commit it. The ID isn't a secret.
+2. **Add the ID to this repo.** In `wrangler.toml`, set `database_id` to that ID and commit it. The ID isn't a secret.
 3. **Create the image bucket.** Go to **R2** and create a bucket named `cadence-listy-images`. Leave public access off.
 4. **Connect GitHub.** Go to **Workers & Pages > Create** and import this repo. Use `npm run build` as the build command and `npx wrangler deploy` as the deploy command.
 5. **Set your invite code.** In the Worker, go to **Settings > Variables and Secrets** and add a secret named `INVITE_CODE`. Anyone who wants an account needs this code. Without it, sign-ups stay closed.

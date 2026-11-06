@@ -10,7 +10,7 @@ directory = ".svelte-kit/cloudflare"
 [[d1_databases]]
 binding = "DB"
 database_name = "cadence-listy"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "f637960d-f8d0-4760-9b09-6c0d8238df6c"
 
 [[r2_buckets]]
 binding = "IMAGES"
