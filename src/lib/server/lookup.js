@@ -3,8 +3,10 @@
 // networks, so the checks here only need to keep it to ordinary public web addresses.
 import { sniffImage } from './images.js';
 
-const MAX_PAGE = 2 * 1024 * 1024;
+// Amazon's pages run to a few MB, with the product details part way down.
+const MAX_PAGE = 3 * 1024 * 1024;
 const MAX_DETAILS = 240;
+const MAX_TITLE = 60;
 const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; CadenceListy/1.0)', Accept: 'text/html,application/xhtml+xml' };
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
@@ -22,6 +24,18 @@ const shorten = (s) => {
 	return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), MAX_DETAILS - 40)).trimEnd()}…`;
 };
 
+/** Store titles are often a whole sales pitch, so keep the part before the pitch starts. */
+export function shortTitle(raw) {
+	const title = raw.replace(/^amazon(\.[a-z.]+)?\s*:\s*/i, '').replace(/\s:\s[^:]+$/, '').trim();
+	if (title.length <= MAX_TITLE) return title;
+	const breaks = [' - ', ' – ', ' — ', ' | ', ', ', ' (', ' with ', ': ']
+		.map((mark) => title.indexOf(mark, 15))
+		.filter((at) => at > 0 && at <= MAX_TITLE + 15);
+	if (breaks.length) return title.slice(0, Math.min(...breaks)).trim();
+	const cut = title.slice(0, MAX_TITLE);
+	return cut.slice(0, cut.lastIndexOf(' ')).trim() || cut;
+}
+
 /** Only public http(s) addresses, never a bare IP or an internal-looking name. */
 export function publicUrl(raw, env) {
 	let u;
@@ -36,15 +50,15 @@ export function publicUrl(raw, env) {
 	return u;
 }
 
-/** Stop reading after `max` bytes. */
-function capped(body, max) {
+/** Stop reading after `max` bytes, or as soon as `enough` says there's no need to go on. */
+function capped(body, max, enough) {
 	let seen = 0;
 	return body.pipeThrough(
 		new TransformStream({
 			transform(chunk, controller) {
 				seen += chunk.byteLength;
 				controller.enqueue(chunk);
-				if (seen >= max) controller.terminate();
+				if (seen >= max || enough()) controller.terminate();
 			}
 		})
 	);
@@ -97,7 +111,65 @@ export async function readProduct(response, pageUrl) {
 	const scripts = [];
 	let script = '';
 	let title = '';
+	// For stores like Amazon that keep these in the page itself, not in product data.
+	const page = { title: '', salePrice: '', mainPrice: '', price: '', image: '', bullets: [] };
+	const firstText = (key) => {
+		let text = '';
+		return {
+			text(t) {
+				if (page[key]) return;
+				text += t.text;
+				if (t.lastInTextNode) {
+					page[key] = clean(text);
+					text = '';
+				}
+			}
+		};
+	};
+	const imageFrom = (...names) => ({
+		element(e) {
+			if (page.image) return;
+			for (const name of names) {
+				let value = e.getAttribute(name);
+				if (name === 'data-a-dynamic-image' && value) {
+					try {
+						value = Object.keys(JSON.parse(decode(value)))[0];
+					} catch {
+						value = '';
+					}
+				}
+				if (value && !value.startsWith('data:')) {
+					page.image = value;
+					return;
+				}
+			}
+		}
+	});
+	let bullet = '';
 	const rewriter = new HTMLRewriter()
+		.on('#productTitle', firstText('title'))
+		.on('.priceToPay .a-offscreen', firstText('salePrice'))
+		.on('#corePrice_feature_div .a-offscreen', firstText('mainPrice'))
+		.on('.a-price:not(.a-text-price) .a-offscreen', firstText('price'))
+		.on('[itemprop="price"]', {
+			element(e) {
+				if (!page.price && e.getAttribute('content')) page.price = formatPrice(e.getAttribute('content'), meta['product:price:currency']);
+			}
+		})
+		.on('img#landingImage', imageFrom('data-old-hires', 'data-a-dynamic-image', 'src'))
+		.on('img#main-image', imageFrom('data-a-hires', 'src'))
+		.on('img.a-dynamic-image', imageFrom('data-old-hires', 'data-a-dynamic-image', 'src'))
+		.on('[itemprop="image"]', imageFrom('content', 'src', 'href'))
+		.on('link[rel="image_src"]', imageFrom('href'))
+		.on('#feature-bullets li span.a-list-item', {
+			text(t) {
+				bullet += t.text;
+				if (t.lastInTextNode) {
+					if (clean(bullet) && page.bullets.length < 2) page.bullets.push(clean(bullet));
+					bullet = '';
+				}
+			}
+		})
 		.on('meta', {
 			element(e) {
 				const key = (e.getAttribute('property') || e.getAttribute('name') || '').toLowerCase();
@@ -119,7 +191,8 @@ export async function readProduct(response, pageUrl) {
 				}
 			}
 		});
-	await rewriter.transform(new Response(capped(response.body, MAX_PAGE), { headers: response.headers })).arrayBuffer();
+	const enough = () => !!(page.title && page.image && page.salePrice && page.bullets.length);
+	await rewriter.transform(new Response(capped(response.body, MAX_PAGE, enough), { headers: response.headers })).arrayBuffer();
 
 	let product = null;
 	for (const text of scripts) {
@@ -132,18 +205,23 @@ export async function readProduct(response, pageUrl) {
 	}
 
 	const { amount, currency } = offerPrice(product?.offers);
-	const image = firstImage(product?.image) || meta['og:image'] || meta['og:image:secure_url'] || meta['twitter:image'] || '';
+	const image = firstImage(product?.image) || meta['og:image'] || meta['og:image:secure_url'] || meta['twitter:image'] || page.image;
 	let absolute = '';
 	try {
 		absolute = image ? new URL(decode(image), pageUrl).href : '';
 	} catch {
 		// No usable image.
 	}
+	const fullTitle = clean(product?.name) || page.title || clean(meta['og:title']) || clean(meta['twitter:title']) || clean(title);
+	const name = shortTitle(fullTitle);
+	const host = new URL(pageUrl).hostname.replace(/^www\./, '');
 	return {
-		title: clean(product?.name) || clean(meta['og:title']) || clean(meta['twitter:title']) || clean(title),
-		details: shorten(clean(product?.description) || clean(meta['og:description']) || clean(meta.description)),
-		price: formatPrice(amount ?? meta['product:price:amount'] ?? meta['og:price:amount'], currency ?? meta['product:price:currency'] ?? meta['og:price:currency']),
-		store: clean(meta['og:site_name']) || new URL(pageUrl).hostname.replace(/^www\./, ''),
+		title: name,
+		// The words a long title lost are often the best description a store gives.
+		details: shorten(clean(product?.description) || clean(meta['og:description']) || page.bullets.join(' ') || clean(meta.description) || (name === fullTitle ? '' : fullTitle)),
+		price:
+			formatPrice(amount ?? meta['product:price:amount'] ?? meta['og:price:amount'], currency ?? meta['product:price:currency'] ?? meta['og:price:currency']) || page.salePrice || page.mainPrice || page.price,
+		store: clean(meta['og:site_name']) || (/(^|\.)amazon\./.test(host) ? 'Amazon' : host),
 		image: absolute
 	};
 }
