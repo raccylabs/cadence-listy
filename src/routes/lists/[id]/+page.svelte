@@ -1,8 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { EDITIONS } from '$lib/editions/index.js';
 	import ItemForm from '../ItemForm.svelte';
-	import { shrinkPhoto } from '$lib/photo.js';
 
 	let { data, form } = $props();
 	const list = $derived(data.list);
@@ -10,6 +10,53 @@
 	let copied = $state(false);
 	let editing = $state(0);
 	let confirmDelete = $state(false);
+
+	// Reordering works on a local copy until it's saved. The drag uses pointer events so it works
+	// with a finger as well as a mouse, and the handle also takes the arrow keys.
+	let moving = $state(null);
+	let dragId = $state(0);
+	const shown = $derived(moving ?? data.items);
+
+	function shift(id, overId) {
+		const from = moving.findIndex((i) => i.id === id);
+		const to = moving.findIndex((i) => i.id === overId);
+		if (from < 0 || to < 0 || from === to || moving[from].tier !== moving[to].tier) return;
+		const next = [...moving];
+		next.splice(to, 0, next.splice(from, 1)[0]);
+		moving = next;
+	}
+	function startDrag(e, id) {
+		e.preventDefault();
+		e.currentTarget.setPointerCapture(e.pointerId);
+		dragId = id;
+		moving = [...data.items];
+	}
+	function overDrag(e) {
+		if (!dragId) return;
+		const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-item]');
+		if (over) shift(dragId, Number(over.dataset.item));
+	}
+	async function saveOrder() {
+		const ids = moving.map((i) => i.id);
+		await fetch(`/lists/${list.id}/order`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids }) });
+		await invalidateAll();
+		moving = null;
+	}
+	function endDrag() {
+		if (!dragId) return;
+		dragId = 0;
+		saveOrder();
+	}
+	function keyMove(e, item, items) {
+		const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+		const neighbor = step && items[items.findIndex((i) => i.id === item.id) + step];
+		if (!step) return;
+		e.preventDefault();
+		if (!neighbor) return;
+		moving = [...data.items];
+		shift(item.id, neighbor.id);
+		saveOrder();
+	}
 
 	async function copy() {
 		await navigator.clipboard.writeText(data.shareUrl);
@@ -42,29 +89,26 @@
 	<form method="POST" action="?/newLink" use:enhance={stay}><button class="btn" title="The old link stops working">Replace link</button></form>
 </div>
 
-<div class="Subhead Subhead--spaced"><h2>Banner image</h2></div>
-{#if list.bannerImage}<img class="banner-now" src={list.bannerImage} alt="Current banner" />{/if}
-<form method="POST" action="?/setBanner" enctype="multipart/form-data" use:enhance class="banner-form">
-	<label for="banner-file">Upload an image</label>
-	<input id="banner-file" class="form-control" type="file" name="banner" accept="image/*" onchange={(e) => shrinkPhoto(e.currentTarget, 2000)} />
-	<div class="row">
-		<button class="btn">{list.bannerImage ? 'Replace banner' : 'Use this banner'}</button>
-	</div>
-</form>
-{#if list.bannerImage}
-	<form method="POST" action="?/removeBanner" use:enhance={stay} class="row"><button class="btn">Remove image</button></form>
-{/if}
-<p class="note">{list.bannerImage ? 'Removing it brings back the standard banner.' : `Without an image, your list uses the standard ${edition.name} banner.`} Wide photos work best.</p>
-
 <div class="Subhead Subhead--spaced"><h2>Items</h2></div>
 <ItemForm tiers={edition.tiers} listId={list.id} />
 {#each edition.tiers as tier, t}
-	{@const items = data.items.filter((i) => i.tier === t + 1)}
+	{@const items = shown.filter((i) => i.tier === t + 1)}
 	{#if items.length}
 		<h3 class="tier">{tier}</h3>
 		{#each items as item (item.id)}
-			<div class="item">
+			<div class="item" class:dragging={dragId === item.id} data-item={item.id}>
 				<div class="line">
+					<button
+						type="button"
+						class="grip"
+						aria-label="Move {item.title}. Drag, or use the up and down arrow keys."
+						title="Drag to reorder"
+						onpointerdown={(e) => startDrag(e, item.id)}
+						onpointermove={overDrag}
+						onpointerup={endDrag}
+						onpointercancel={endDrag}
+						onkeydown={(e) => keyMove(e, item, items)}
+					>⠿</button>
 					{#if item.has_photo}<img src="/share/{list.share_token}/photo/{item.id}?v={item.photo_v}" alt="" />{/if}
 					<span class="name"><strong>{item.title}</strong>{#if item.featured} <span class="small muted">Top pick</span>{/if}<span class="small muted">{[item.price, item.store].filter(Boolean).join(', ')}</span></span>
 					<button type="button" class="btn btn-sm" onclick={() => (editing = editing === item.id ? 0 : item.id)}>{editing === item.id ? 'Close' : 'Edit'}</button>
@@ -156,27 +200,28 @@
 	.row form.row {
 		margin: 0;
 	}
-	.banner-now {
-		display: block;
-		width: 100%;
-		max-width: 520px;
-		aspect-ratio: 3 / 1;
-		margin-bottom: 12px;
-		border-radius: var(--radius);
-		object-fit: cover;
-	}
-	.banner-form {
-		display: grid;
-		gap: 4px;
-		max-width: 520px;
-	}
-	.banner-form label {
-		margin-top: 6px;
-		font-size: 13px;
-		font-weight: 600;
-	}
 	.pin {
 		width: 130px;
+	}
+	.grip {
+		flex: none;
+		width: 30px;
+		height: 38px;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #000;
+		font-size: 20px;
+		line-height: 1;
+		cursor: grab;
+		touch-action: none;
+	}
+	.dragging {
+		background: #ffc900;
+		box-shadow: 5px 5px 0 #000;
+	}
+	.dragging .grip {
+		cursor: grabbing;
 	}
 	.tier {
 		margin: 20px 0 8px;

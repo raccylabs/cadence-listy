@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import { requireUser, guarded, readForm } from '$lib/server/guard.js';
 import {
-	ownedList, readOptions, listItems, listNotes, updateList, deleteList, newLink, setPin, removePin, setBanner, removeBanner,
+	ownedList, readOptions, listItems, listNotes, updateList, deleteList, newLink, setPin, removePin,
 	addItem, updateItem, deleteItem, deleteNote, daysUntil, keepUntil, today
 } from '$lib/server/lists.js';
 
@@ -14,13 +14,12 @@ async function mine({ locals, url, params }) {
 
 export async function load(event) {
 	const { user, list, env } = await mine(event);
-	const { pin_hash, banner_key, options, user_id, ...rest } = list;
+	const { pin_hash, banner_key, banner_size, banner_v, options, user_id, ...rest } = list;
 	return {
 		list: {
 			...rest,
 			hasPin: !!pin_hash,
-			options: readOptions(list),
-			bannerImage: banner_key ? `/share/${list.share_token}/banner?v=${list.banner_v}` : ''
+			options: readOptions(list)
 		},
 		keepUntil: keepUntil(list),
 		items: await listItems(env, list),
@@ -40,12 +39,6 @@ const act = (fn) =>
 export const actions = {
 	save: act(async ({ env, user, list }, { request }) => {
 		await updateList(env, user, list, await readForm(request));
-	}),
-	setBanner: act(async ({ env, list }, { request }) => {
-		await setBanner(env, list, await request.formData());
-	}),
-	removeBanner: act(async ({ env, list }) => {
-		await removeBanner(env, list);
 	}),
 	addItem: act(async ({ env, list }, { request }) => {
 		return { added: true, ...(await addItem(env, list, await request.formData())) };

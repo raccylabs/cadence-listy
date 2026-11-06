@@ -48,5 +48,20 @@
 		flex: none;
 		width: 52px;
 		height: 52px;
+		transform-origin: 50% 100%;
+		animation: sway 3s ease-in-out infinite alternate;
+	}
+	@keyframes sway {
+		from {
+			transform: rotate(-4deg);
+		}
+		to {
+			transform: rotate(4deg);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.spot {
+			animation: none;
+		}
 	}
 </style>

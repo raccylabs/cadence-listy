@@ -5,7 +5,7 @@ import { sniffImage } from './images.js';
 
 // Amazon's pages run to a few MB, with the product details part way down.
 const MAX_PAGE = 3 * 1024 * 1024;
-const MAX_DETAILS = 240;
+const MAX_DETAILS = 1500;
 const MAX_TITLE = 60;
 const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; CadenceListy/1.0)', Accept: 'text/html,application/xhtml+xml' };
 

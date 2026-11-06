@@ -18,6 +18,7 @@ export const MAX_PHOTO = 3.5 * 1024 * 1024;
 const USER_SPACE = 100 * 1024 * 1024;
 const KEEP_DAYS = 7;
 const MAX_ITEMS = 200;
+const MAX_DETAILS = 1500;
 const MAX_NOTES = 300;
 
 /** Today's date where this person is. */
@@ -128,8 +129,16 @@ export async function purgeOldLists(env) {
 	for (const list of lists) if (today(list) > keepUntil(list)) await deleteList(env, list);
 }
 
+/** Banner uploads are gone, so clear out any that were saved before they were removed. */
+async function dropOldBanners(env) {
+	const lists = await all(env, 'SELECT id, banner_key FROM lists WHERE banner_key IS NOT NULL');
+	await dropImages(env, lists.map((l) => l.banner_key));
+	await run(env, 'UPDATE lists SET banner_key = NULL, banner_size = 0 WHERE banner_key IS NOT NULL');
+}
+
 export async function dailyCleanup(env) {
 	await purgeOldLists(env);
+	await dropOldBanners(env);
 	await oldSignIns(env);
 }
 
@@ -197,18 +206,6 @@ async function itemPhoto(env, list, f) {
 	return image ? { photo: await saveImage(env, list, image.bytes, image.type) } : { photo: null, photoFailed: true };
 }
 
-export async function setBanner(env, list, f) {
-	const image = await storeImage(env, list, f.get('banner'));
-	if (!image) bad('Choose an image.');
-	await run(env, 'UPDATE lists SET banner_key = ?, banner_size = ?, banner_v = banner_v + 1 WHERE id = ?', image.key, image.size, list.id);
-	await dropImages(env, [list.banner_key]);
-}
-
-export async function removeBanner(env, list) {
-	await run(env, 'UPDATE lists SET banner_key = NULL, banner_size = 0, banner_v = banner_v + 1 WHERE id = ?', list.id);
-	await dropImages(env, [list.banner_key]);
-}
-
 function itemFields(list, f) {
 	const title = str(f.get('title'), 120);
 	if (!title) bad('Name the thing you want.');
@@ -219,7 +216,7 @@ function itemFields(list, f) {
 		url: cleanUrl(f.get('url')),
 		price: str(f.get('price'), 24),
 		store: str(f.get('store'), 80),
-		details: str(f.get('details'), 500),
+		details: str(f.get('details'), MAX_DETAILS),
 		featured: f.get('featured') === 'on' ? 1 : 0
 	};
 }
@@ -233,8 +230,9 @@ export async function addItem(env, list, f) {
 	if (x.featured) await clearFeatured(env, list);
 	await run(
 		env,
-		'INSERT INTO list_items (list_id, tier, title, url, price, store, details, featured, photo_key, photo_size, photo_v) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		list.id, x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, photo?.key ?? null, photo?.size ?? 0, photo ? 1 : 0
+		`INSERT INTO list_items (list_id, tier, title, url, price, store, details, featured, photo_key, photo_size, photo_v, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM list_items WHERE list_id = ?))`,
+		list.id, x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, photo?.key ?? null, photo?.size ?? 0, photo ? 1 : 0, list.id
 	);
 	return { photoFailed };
 }
@@ -258,6 +256,13 @@ export async function updateItem(env, list, f) {
 	return { photoFailed };
 }
 
+/** Save a new item order. Ids from outside this list are ignored. */
+export async function reorderItems(env, list, ids) {
+	const clean = [...new Set(ids.map(Number).filter(Number.isInteger))].slice(0, MAX_ITEMS);
+	if (!clean.length) return;
+	await env.DB.batch(clean.map((id, i) => env.DB.prepare('UPDATE list_items SET position = ? WHERE id = ? AND list_id = ?').bind(i + 1, id, list.id)));
+}
+
 export async function deleteItem(env, list, id) {
 	const item = await one(env, 'SELECT photo_key FROM list_items WHERE id = ? AND list_id = ?', Number(id), list.id);
 	await run(env, 'DELETE FROM list_items WHERE id = ? AND list_id = ?', Number(id), list.id);
@@ -278,7 +283,7 @@ export const listNotes = (env, list) =>
 export const listItems = (env, list) =>
 	all(
 		env,
-		'SELECT id, tier, title, url, price, store, details, featured, photo_v, photo_key IS NOT NULL AS has_photo FROM list_items WHERE list_id = ? ORDER BY tier, id',
+		'SELECT id, tier, title, url, price, store, details, featured, photo_v, photo_key IS NOT NULL AS has_photo FROM list_items WHERE list_id = ? ORDER BY tier, position, id',
 		list.id
 	);
 
@@ -325,7 +330,6 @@ export async function publicList(env, list, now) {
 		event_date: list.event_date,
 		days: daysUntil(list.event_date, now),
 		now,
-		banner: list.banner_key ? list.banner_v : 0,
 		options: readOptions(list),
 		items: (await listItems(env, list)).map(({ id, tier, title, url, price, store, details, featured, photo_v, has_photo }) => ({
 			id, tier, title, url, price, store, details, featured: !!featured, photo: has_photo ? photo_v : 0

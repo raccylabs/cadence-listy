@@ -22,15 +22,15 @@
 		// The top pick leads the board.
 		return options.spotlight ? [...items].sort((a, b) => Number(b.featured) - Number(a.featured)) : items;
 	});
-	const bannerImage = $derived(list?.banner ? `/share/${page.params.token}/banner?v=${list.banner}` : '');
-
-	// One pop-up serves every item's note.
-	let noteBox = $state();
-	let noteItem = $state(null);
-	const openNote = (item) => {
-		noteItem = item;
+	// One pop-up shows an item's details or takes a note about it.
+	let box = $state();
+	let boxItem = $state(null);
+	let boxMode = $state('details');
+	const openBox = (item, mode) => {
+		boxItem = item;
+		boxMode = mode;
 		form = null;
-		noteBox.showModal();
+		if (!box.open) box.showModal();
 	};
 	const photo = (item) => `/share/${page.params.token}/photo/${item.id}?v=${item.photo}`;
 </script>
@@ -38,6 +38,14 @@
 <svelte:head>
 	<title>{list?.title ?? `${edition.name} list`}</title>
 	<meta name="robots" content="noindex, nofollow" />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="Cadence Listy" />
+	<meta property="og:title" content={list?.title ?? `A ${edition.name} wish list`} />
+	<meta property="og:description" content="See the wish list." />
+	<meta property="og:image" content="{page.url.origin}/preview-{edition.id}.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 {#snippet noteForm(item)}
@@ -79,12 +87,8 @@
 					{#if list.message}<p class="msg">{list.message}</p>{/if}
 					{#if options.countdown}<Countdown days={list.days} {edition} />{/if}
 				</div>
-				<div class="art" class:pic={bannerImage}>
-					{#if bannerImage}
-						<img class="bg" src={bannerImage} alt="" />
-					{:else}
-						<Scene edition={edition.id} />
-					{/if}
+				<div class="art">
+					<Scene edition={edition.id} />
 					<Decor edition={edition.id} {options} part="string" />
 				</div>
 			</header>
@@ -100,8 +104,8 @@
 			{/if}
 
 			<div class="catalog">
-				{#each board as item (item.id)}
-					<article class="product" class:top={item.featured && options.spotlight}>
+				{#each board as item, i (item.id)}
+					<article class="product" class:top={item.featured && options.spotlight} style="--n:{Math.min(i, 8)}">
 						<div class="shot">
 							{#if item.photo}
 								<img src={photo(item)} alt={item.title} loading="lazy" />
@@ -117,7 +121,8 @@
 							{#if item.details}<p class="fine">{item.details}</p>{/if}
 							<div class="acts">
 								{#if item.url}<a class="buy" href={item.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
-								<button type="button" class="note-link" onclick={() => openNote(item)}>Leave a note</button>
+								{#if item.details}<button type="button" class="note-link" onclick={() => openBox(item, 'details')}>Details</button>{/if}
+								<button type="button" class="note-link" onclick={() => openBox(item, 'note')}>Leave a note</button>
 							</div>
 						</div>
 					</article>
@@ -144,13 +149,27 @@
 				</div>
 				{@render noteForm(null)}
 			</section>
-			<dialog bind:this={noteBox} class="note-box" aria-label="Leave a note">
-				{#if noteItem}
+			<dialog bind:this={box} class="note-box" class:wide={boxMode === 'details'} aria-label={boxMode === 'note' ? 'Leave a note' : 'Item details'}>
+				{#if boxItem && boxMode === 'note'}
 					<h2>Leave a note</h2>
-					<p class="about">About {noteItem.title}</p>
-					{@render noteForm(noteItem)}
-					<button type="button" class="close" onclick={() => noteBox.close()}>Close</button>
+					<p class="about">About {boxItem.title}</p>
+					{@render noteForm(boxItem)}
+				{:else if boxItem}
+					<div class="full">
+						{#if boxItem.photo}<img src={photo(boxItem)} alt={boxItem.title} />{/if}
+						<div>
+							<h2>{boxItem.title}</h2>
+							{#if boxItem.price}<p class="price">{boxItem.price}</p>{/if}
+							{#if boxItem.store}<p class="store">{boxItem.store}</p>{/if}
+						</div>
+					</div>
+					<p class="all">{boxItem.details}</p>
+					<div class="acts">
+						{#if boxItem.url}<a class="buy" href={boxItem.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
+						<button type="button" class="note-link" onclick={() => openBox(boxItem, 'note')}>Leave a note</button>
+					</div>
 				{/if}
+				<button type="button" class="close" onclick={() => box.close()}>Close</button>
 			</dialog>
 		</main>
 	{/if}
@@ -234,13 +253,6 @@
 	.art :global(.string) {
 		z-index: 1;
 	}
-	.bg {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
 	.stripes {
 		height: 18px;
 		margin-top: 12px;
@@ -292,6 +304,85 @@
 	}
 	.product.top {
 		background: var(--ed-pop-4);
+	}
+	/* Motion: boxes pop in once, lift when pointed at, and the drawings wobble when you reach them. */
+	.product {
+		animation: pop 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+		animation-delay: calc(var(--n) * 55ms);
+		transition: transform 0.14s ease, box-shadow 0.14s ease;
+	}
+	.product:hover {
+		box-shadow: 6px 6px 0 #000;
+		transform: translate(-3px, -3px);
+	}
+	.product:hover .shot img,
+	.product:hover .blank :global(svg) {
+		animation: wobble 0.5s ease-in-out;
+	}
+	.buy,
+	.pills button,
+	.note-form button,
+	.note-link {
+		transition: transform 0.1s ease, background-color 0.1s ease;
+	}
+	.buy:active,
+	.pills button:active,
+	.note-form button:active {
+		transform: translate(2px, 2px);
+	}
+	.vignettes li:hover .disc {
+		animation: wobble 0.6s ease-in-out;
+	}
+	.vignettes li:hover .disc :global(svg) {
+		animation: hop 0.6s ease-in-out;
+	}
+	.note-box[open] {
+		animation: pop 0.25s cubic-bezier(0.2, 1.5, 0.4, 1);
+	}
+	.note-box[open]::backdrop {
+		animation: fade 0.2s ease;
+	}
+	.sent {
+		animation: pop 0.3s cubic-bezier(0.2, 1.5, 0.4, 1);
+	}
+	@keyframes pop {
+		from {
+			opacity: 0;
+			transform: translateY(14px) scale(0.92);
+		}
+	}
+	@keyframes wobble {
+		25% {
+			transform: rotate(-3deg);
+		}
+		75% {
+			transform: rotate(3deg);
+		}
+	}
+	@keyframes hop {
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+	@keyframes fade {
+		from {
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.product,
+		.note-box[open],
+		.note-box[open]::backdrop,
+		.sent,
+		.product:hover .shot img,
+		.product:hover .blank :global(svg),
+		.vignettes li:hover .disc,
+		.vignettes li:hover .disc :global(svg) {
+			animation: none;
+		}
+		.product:hover {
+			transform: none;
+		}
 	}
 	.shot {
 		position: relative;
@@ -410,6 +501,32 @@
 		font-weight: 400;
 		line-height: 1.1;
 		text-transform: uppercase;
+	}
+	.note-box.wide {
+		width: min(560px, calc(100vw - 32px));
+		max-height: calc(100vh - 48px);
+		background: #fff;
+	}
+	.full {
+		display: flex;
+		gap: 16px;
+		padding-right: 60px;
+	}
+	.full img {
+		flex: none;
+		width: 130px;
+		height: 130px;
+		border: 2px solid #000;
+		border-radius: 6px;
+		object-fit: contain;
+	}
+	.full h2 {
+		font-size: 26px;
+	}
+	.all {
+		margin-top: 14px;
+		white-space: pre-line;
+		font-size: 16px;
 	}
 	.about {
 		margin-bottom: 4px;

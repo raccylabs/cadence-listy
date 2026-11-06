@@ -43,3 +43,5 @@ npm run dev
 ```
 
 Wrangler runs the app at `http://localhost:8787` with local copies of D1 and R2. To run the daily cleanup, open `http://localhost:8787/__scheduled`.
+
+The link preview images in `static/` (`preview-<edition>.png`, 1200 × 630) go with each edition, so a new theme needs one too.

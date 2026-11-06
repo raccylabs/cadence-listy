@@ -118,7 +118,7 @@
 	</div>
 	<div class="wide">
 		<label for="{key}-details">Description, size, color</label>
-		<textarea id="{key}-details" class="form-control" name="details" rows="2" maxlength="500" bind:value={f.details}></textarea>
+		<textarea id="{key}-details" class="form-control" name="details" rows="3" maxlength="1500" bind:value={f.details}></textarea>
 	</div>
 	<label class="check wide"><input type="checkbox" name="featured" checked={!!item?.featured} /> Make this my top pick</label>
 	{#if error}<div class="flash flash-error wide">{error}</div>{/if}

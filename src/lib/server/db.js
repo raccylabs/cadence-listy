@@ -69,7 +69,8 @@ const MIGRATIONS = [
 		)`,
 		`CREATE INDEX list_notes_list ON list_notes(list_id, id)`
 	],
-	[`ALTER TABLE lists DROP COLUMN banner_url`]
+	[`ALTER TABLE lists DROP COLUMN banner_url`],
+	[`ALTER TABLE list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0`, `UPDATE list_items SET position = id`]
 ];
 
 let ready = false;
