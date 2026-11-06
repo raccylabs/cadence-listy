@@ -4,6 +4,7 @@ import { one, all, run } from './db.js';
 import { getUserById, sha256, sameText, randomToken, oldSignIns } from './auth.js';
 import { ValidationError } from './errors.js';
 import { sniffImage, putImage, dropImages } from './images.js';
+import { downloadImage } from './lookup.js';
 import { EDITIONS } from '../editions/index.js';
 
 const bad = (msg) => {
@@ -169,6 +170,13 @@ const usedSpace = async (env, list) =>
 		)
 	).n;
 
+async function saveImage(env, list, bytes, type) {
+	if ((await usedSpace(env, list)) + bytes.length > USER_SPACE) bad('You have used all 100 MB of your image space. Delete some photos first.');
+	const key = `lists/${list.id}/${randomToken(16)}`;
+	await putImage(env, key, bytes, type);
+	return { key, size: bytes.length };
+}
+
 /** Check an uploaded image and save it. Returns null when no file was chosen. */
 async function storeImage(env, list, file) {
 	if (!(file instanceof File) || file.size === 0) return null;
@@ -176,10 +184,17 @@ async function storeImage(env, list, file) {
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const type = sniffImage(bytes);
 	if (!type) bad('Use a PNG, JPEG, WebP or GIF photo.');
-	if ((await usedSpace(env, list)) + bytes.length > USER_SPACE) bad('You have used all 100 MB of your image space. Delete some photos first.');
-	const key = `lists/${list.id}/${randomToken(16)}`;
-	await putImage(env, key, bytes, type);
-	return { key, size: bytes.length };
+	return saveImage(env, list, bytes, type);
+}
+
+/** An item's photo: the uploaded file if there is one, otherwise the product image from its link. */
+async function itemPhoto(env, list, f) {
+	const uploaded = await storeImage(env, list, f.get('photo'));
+	if (uploaded) return { photo: uploaded };
+	const link = str(f.get('image_url'), 2000);
+	if (!link) return { photo: null };
+	const image = await downloadImage(env, link, MAX_PHOTO);
+	return image ? { photo: await saveImage(env, list, image.bytes, image.type) } : { photo: null, photoFailed: true };
 }
 
 // Unsplash serves these to visitors directly, so nothing is stored. Only its own image hosts
@@ -240,13 +255,14 @@ const clearFeatured = (env, list) => run(env, 'UPDATE list_items SET featured = 
 export async function addItem(env, list, f) {
 	if ((await one(env, 'SELECT COUNT(*) AS n FROM list_items WHERE list_id = ?', list.id)).n >= MAX_ITEMS) bad('This list is full.');
 	const x = itemFields(list, f);
-	const photo = await storeImage(env, list, f.get('photo'));
+	const { photo, photoFailed } = await itemPhoto(env, list, f);
 	if (x.featured) await clearFeatured(env, list);
 	await run(
 		env,
 		'INSERT INTO list_items (list_id, tier, title, url, price, store, details, featured, photo_key, photo_size, photo_v) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 		list.id, x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, photo?.key ?? null, photo?.size ?? 0, photo ? 1 : 0
 	);
+	return { photoFailed };
 }
 
 export async function updateItem(env, list, f) {
@@ -254,7 +270,7 @@ export async function updateItem(env, list, f) {
 	const item = await one(env, 'SELECT id, photo_key FROM list_items WHERE id = ? AND list_id = ?', id, list.id);
 	if (!item) bad('That item is gone.');
 	const x = itemFields(list, f);
-	const photo = await storeImage(env, list, f.get('photo'));
+	const { photo, photoFailed } = await itemPhoto(env, list, f);
 	if (x.featured) await clearFeatured(env, list);
 	await run(
 		env,
@@ -265,6 +281,7 @@ export async function updateItem(env, list, f) {
 		await run(env, 'UPDATE list_items SET photo_key = ?, photo_size = ?, photo_v = photo_v + 1 WHERE id = ?', photo?.key ?? null, photo?.size ?? 0, id);
 		await dropImages(env, [item.photo_key]);
 	}
+	return { photoFailed };
 }
 
 export async function deleteItem(env, list, id) {

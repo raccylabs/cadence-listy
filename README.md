@@ -2,6 +2,7 @@
 
 Themed wish lists you can share with one link. Make a Christmas or Birthday list, add items with photos and links, and send the link to anyone. They don't need an account.
 
+- Paste a product link to fill in its name, price, description and photo, or upload your own photo
 - Shared lists show nothing else about your account, with an optional PIN
 - Visitors can leave notes that only you can see
 - Countdown, advent calendar, Christmas lights and a custom banner

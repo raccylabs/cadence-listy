@@ -59,7 +59,7 @@
 <p class="note">{list.bannerImage ? 'Removing it brings back the standard banner.' : `Without an image, your list uses the standard ${edition.name} banner.`} Wide photos work best, and a darker left side keeps your title easy to read.</p>
 
 <div class="Subhead Subhead--spaced"><h2>Items</h2></div>
-<ItemForm tiers={edition.tiers} />
+<ItemForm tiers={edition.tiers} listId={list.id} />
 {#each edition.tiers as tier, t}
 	{@const items = data.items.filter((i) => i.tier === t + 1)}
 	{#if items.length}
@@ -73,7 +73,7 @@
 					<form method="POST" action="?/deleteItem" use:enhance={stay}><input type="hidden" name="id" value={item.id} /><button class="btn btn-sm btn-danger">Delete</button></form>
 				</div>
 				{#if editing === item.id}
-					<div class="edit"><ItemForm tiers={edition.tiers} {item} onsaved={() => (editing = 0)} /></div>
+					<div class="edit"><ItemForm tiers={edition.tiers} listId={list.id} {item} onsaved={() => (editing = 0)} /></div>
 				{/if}
 			</div>
 		{/each}

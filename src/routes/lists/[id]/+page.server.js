@@ -48,11 +48,10 @@ export const actions = {
 		await removeBanner(env, list);
 	}),
 	addItem: act(async ({ env, list }, { request }) => {
-		await addItem(env, list, await request.formData());
-		return { added: true };
+		return { added: true, ...(await addItem(env, list, await request.formData())) };
 	}),
 	updateItem: act(async ({ env, list }, { request }) => {
-		await updateItem(env, list, await request.formData());
+		return { saved: true, ...(await updateItem(env, list, await request.formData())) };
 	}),
 	deleteItem: act(async ({ env, list }, { request }) => {
 		await deleteItem(env, list, (await readForm(request)).id);

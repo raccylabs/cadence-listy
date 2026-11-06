@@ -347,6 +347,13 @@
 		color: var(--ed-muted);
 		font-size: 14px;
 	}
+	.fine {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+	}
 	.acts {
 		display: flex;
 		flex-wrap: wrap;
