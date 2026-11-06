@@ -49,7 +49,9 @@ export async function createUser(env, { username, key, timezone }) {
 		// Keep UTC.
 	}
 	const salt = randomToken(16);
-	const made = await run(env, 'INSERT INTO users (username, password_salt, password_hash, timezone) VALUES (?, ?, ?, ?)', username, salt, await keyHash(salt, key), zone);
+	// The first account on a new site runs it.
+	const first = !(await one(env, 'SELECT id FROM users LIMIT 1'));
+	const made = await run(env, 'INSERT INTO users (username, password_salt, password_hash, timezone, is_admin) VALUES (?, ?, ?, ?, ?)', username, salt, await keyHash(salt, key), zone, first ? 1 : 0);
 	return made.meta.last_row_id;
 }
 

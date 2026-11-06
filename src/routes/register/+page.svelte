@@ -11,7 +11,7 @@
 <div class="auth">
 	<h1>Create an account</h1>
 	{#if !data.open}
-		<p>Sign-ups are closed.</p>
+		<p>Sign-ups are closed. Ask for an invite link, or check that yours hasn't already been used.</p>
 	{:else}
 		{#if form?.error}<div class="flash flash-error mb-3" role="alert">{form.error}</div>{/if}
 		<form

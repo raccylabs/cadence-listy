@@ -1,6 +1,8 @@
 <script>
 	import { EDITION_LIST, EDITIONS } from '$lib/editions/index.js';
 	import Spot from '$lib/editions/Spot.svelte';
+	import { page } from '$app/state';
+	import { bookmarkHref } from '$lib/addButton.js';
 	let { data, form } = $props();
 	const status = (l) => (!l.share_on ? 'Link off' : l.event_date < data.today ? 'Closed' : 'Link on');
 </script>
@@ -40,7 +42,21 @@
 	{/each}
 </div>
 
+<div class="Subhead Subhead--spaced"><h2>Add to Listy button</h2></div>
+<p>Some stores block Listy from reading their pages. This button reads the page from your own browser, so it can pick up the photo, price and description. It works best on a computer.</p>
+<ol class="steps">
+	<li>Show your bookmarks bar. In Chrome, press Ctrl+Shift+B.</li>
+	<li>Drag this button onto the bookmarks bar: <!-- svelte-ignore a11y_invalid_attribute --><a class="btn btn-primary bookmark" href={bookmarkHref(page.url.origin)} onclick={(e) => e.preventDefault()}>Add to Listy</a></li>
+	<li>On a product page, click the bookmark to add the item.</li>
+</ol>
+
 <style>
+	.steps {
+		padding-left: 20px;
+	}
+	.steps li {
+		margin-bottom: 10px;
+	}
 	.rows {
 		display: flex;
 		flex-direction: column;

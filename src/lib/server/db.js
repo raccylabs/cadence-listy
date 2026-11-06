@@ -70,7 +70,18 @@ const MIGRATIONS = [
 		`CREATE INDEX list_notes_list ON list_notes(list_id, id)`
 	],
 	[`ALTER TABLE lists DROP COLUMN banner_url`],
-	[`ALTER TABLE list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0`, `UPDATE list_items SET position = id`]
+	[`ALTER TABLE list_items ADD COLUMN position INTEGER NOT NULL DEFAULT 0`, `UPDATE list_items SET position = id`],
+	[
+		`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`,
+		`UPDATE users SET is_admin = 1 WHERE id = (SELECT MIN(id) FROM users)`,
+		`CREATE TABLE invites (
+			token      TEXT PRIMARY KEY,
+			name       TEXT NOT NULL,
+			created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+			used_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+			used_at    TEXT
+		)`
+	]
 ];
 
 let ready = false;

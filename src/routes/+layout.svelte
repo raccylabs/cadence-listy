@@ -18,6 +18,7 @@
 			{#if data.me}
 				<nav>
 					<a href="/">My lists</a>
+					{#if data.me.admin}<a href="/people">People</a>{/if}
 					<a href="/account">Account</a>
 					<form method="POST" action="/logout"><button>Sign out</button></form>
 				</nav>

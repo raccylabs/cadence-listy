@@ -4,6 +4,7 @@ Themed wish lists you can share with one link. Make a Christmas or Birthday list
 
 - Paste a product link to fill in its name, price, description and photo, or upload your own photo
 - Shared lists show nothing else about your account, with an optional PIN
+- An Add to Listy bookmark reads products from stores that block the server, and images can be pasted in
 - Visitors can leave notes that only you can see, and save the list as a PDF or CSV
 - Countdown, advent calendar, drawn illustrations and an optional banner photo
 - The link closes after the big day, and the list and its photos are deleted a week later
@@ -21,7 +22,7 @@ Everything here is in the [Cloudflare dashboard](https://dash.cloudflare.com).
 5. **Set your invite code.** In the Worker, go to **Settings > Variables and Secrets** and add a secret named `INVITE_CODE`. Anyone who wants an account needs this code. Without it, sign-ups stay closed.
 6. **Add your domain.** In the Worker, go to **Settings > Domains & Routes** and add your custom domain.
 
-Open your site, go to **Create an account**, and enter your invite code. The app sets up its own database tables the first time it runs. After that, every push to `main` deploys automatically.
+Open your site, go to **Create an account**, and enter your invite code. The first account runs the site and gets a **People** page for inviting and removing people. The app sets up its own database tables the first time it runs. After that, every push to `main` deploys automatically.
 
 ## Limits
 

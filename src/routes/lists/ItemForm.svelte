@@ -3,7 +3,7 @@
 	import { shrinkPhoto } from '$lib/photo.js';
 
 	/** Add a new item, or edit one when `item` is given. */
-	let { tiers, listId, item = null, onsaved = () => {} } = $props();
+	let { tiers, listId, item = null, prefill = null, onsaved = () => {} } = $props();
 	const blank = () => ({
 		title: item?.title ?? '',
 		url: item?.url ?? '',
@@ -12,13 +12,36 @@
 		details: item?.details ?? '',
 		image: ''
 	});
-	let f = $state(blank());
+	// `prefill` comes from the Add to Listy button; a long store title gets the same trim as a lookup.
+	const start = () => (prefill ? { ...blank(), ...prefill, title: prefill.title.slice(0, 120), store: prefill.store.slice(0, 80), price: prefill.price.slice(0, 24) } : blank());
+	let f = $state(start());
+	let photoInput = $state();
+	let pasted = $state('');
 	let busy = $state(false);
 	let looking = $state(false);
 	let lookupNote = $state('');
 	let error = $state('');
 	let warning = $state('');
 	const key = $derived(item ? `i${item.id}` : 'new');
+
+	/** A copied image can be pasted anywhere on the form. */
+	async function pasteImage(e) {
+		const file = [...(e.clipboardData?.files ?? [])].find((x) => x.type.startsWith('image/'));
+		if (!file) return;
+		e.preventDefault();
+		const moved = new DataTransfer();
+		moved.items.add(file);
+		photoInput.files = moved.files;
+		await shrinkPhoto(photoInput);
+		f.image = '';
+		if (pasted) URL.revokeObjectURL(pasted);
+		pasted = URL.createObjectURL(photoInput.files[0]);
+	}
+	function clearPasted() {
+		URL.revokeObjectURL(pasted);
+		pasted = '';
+		photoInput.value = '';
+	}
 
 	async function lookup() {
 		if (!f.url.trim() || looking) return;
@@ -44,9 +67,11 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <form
 	method="POST"
-	action={item ? '?/updateItem' : '?/addItem'}
+	action={item ? '?/updateItem' : `/lists/${listId}?/addItem`}
+	onpaste={pasteImage}
 	enctype="multipart/form-data"
 	class="grid"
 	use:enhance={({ formElement }) => {
@@ -65,6 +90,7 @@
 			if (!item) {
 				f = blank();
 				formElement.reset();
+				pasted = '';
 			}
 			onsaved();
 		};
@@ -89,7 +115,12 @@
 		</div>
 		{#if lookupNote}<p class="note" role="status">{lookupNote}</p>{/if}
 	</div>
-	{#if f.image}
+	{#if pasted}
+		<div class="wide found">
+			<img src={pasted} alt="" />
+			<button type="button" class="btn btn-sm" onclick={clearPasted}>Remove pasted image</button>
+		</div>
+	{:else if f.image}
 		<div class="wide found">
 			<img src={f.image} alt="" referrerpolicy="no-referrer" />
 			<button type="button" class="btn btn-sm" onclick={() => (f.image = '')}>Don't use this photo</button>
@@ -115,7 +146,8 @@
 	</div>
 	<div>
 		<label for="{key}-photo">Upload a photo</label>
-		<input id="{key}-photo" class="form-control" type="file" name="photo" accept="image/*" onchange={(e) => shrinkPhoto(e.currentTarget)} />
+		<input id="{key}-photo" class="form-control" type="file" name="photo" accept="image/*" bind:this={photoInput} onchange={(e) => shrinkPhoto(e.currentTarget)} />
+		<p class="note">Or copy an image and paste it here with Ctrl+V.</p>
 		{#if item?.has_photo}<label class="check"><input type="checkbox" name="remove_photo" /> Remove current photo</label>{/if}
 	</div>
 	<div class="wide">

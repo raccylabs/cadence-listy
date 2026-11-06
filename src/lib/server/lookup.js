@@ -2,11 +2,11 @@
 // search engines (JSON-LD) and link previews (Open Graph). Workers' fetch can't reach private
 // networks, so the checks here only need to keep it to ordinary public web addresses.
 import { sniffImage } from './images.js';
+import { storeLabel, shortTitle } from '../stores.js';
 
 // Amazon's pages run to a few MB, with the product details part way down.
 const MAX_PAGE = 3 * 1024 * 1024;
 const MAX_DETAILS = 1500;
-const MAX_TITLE = 60;
 const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; CadenceListy/1.0)', Accept: 'text/html,application/xhtml+xml' };
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
@@ -24,18 +24,6 @@ const shorten = (s) => {
 	return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), MAX_DETAILS - 40)).trimEnd()}…`;
 };
 
-/** Store titles are often a whole sales pitch, so keep the part before the pitch starts. */
-export function shortTitle(raw) {
-	const title = raw.replace(/^amazon(\.[a-z.]+)?\s*:\s*/i, '').replace(/\s:\s[^:]+$/, '').trim();
-	if (title.length <= MAX_TITLE) return title;
-	const breaks = [' - ', ' – ', ' — ', ' | ', ', ', ' (', ' with ', ': ']
-		.map((mark) => title.indexOf(mark, 15))
-		.filter((at) => at > 0 && at <= MAX_TITLE + 15);
-	if (breaks.length) return title.slice(0, Math.min(...breaks)).trim();
-	const cut = title.slice(0, MAX_TITLE);
-	return cut.slice(0, cut.lastIndexOf(' ')).trim() || cut;
-}
-
 /** Only public http(s) addresses, never a bare IP or an internal-looking name. */
 export function publicUrl(raw, env) {
 	let u;
@@ -49,21 +37,6 @@ export function publicUrl(raw, env) {
 	if (!/^https?:$/.test(u.protocol) || ipLike || !u.hostname.includes('.') || u.hostname.endsWith('.local') || u.hostname.endsWith('.internal')) return null;
 	return u;
 }
-
-const STORE_NAMES = {
-	'bestbuy.com': 'Best Buy',
-	'walmart.com': 'Walmart',
-	'target.com': 'Target',
-	'tcgplayer.com': 'TCGplayer',
-	'ebay.com': 'eBay',
-	'costco.com': 'Costco',
-	'homedepot.com': 'Home Depot',
-	'lowes.com': "Lowe's"
-};
-const storeName = (host) => {
-	const name = host.replace(/^www\./, '');
-	return STORE_NAMES[name] ?? (/(^|\.)amazon\./.test(name) ? 'Amazon' : name);
-};
 
 // Bot walls come back as ordinary pages, so spot them by their wording.
 const BOT_WALL = /robot or human|are you a (human|robot)|access denied|just a moment|attention required|verify you are|pardon our interruption|captcha|security check/i;
@@ -83,7 +56,7 @@ function nameFromLink(url) {
 /** What a link alone can tell us, for stores that won't show their page to a server. */
 export function detailsFromLink(url) {
 	const title = nameFromLink(url);
-	return title ? { title, details: '', price: '', store: storeName(url.hostname), image: '', partial: true } : null;
+	return title ? { title, details: '', price: '', store: storeLabel(url.hostname), image: '', partial: true } : null;
 }
 
 /** TCGplayer builds its pages in the browser, but its photos follow a pattern based on the product number. */
@@ -281,7 +254,7 @@ export async function readProduct(response, pageUrl) {
 		!page.title &&
 		linkName &&
 		![...wordsIn(clean(meta['og:title']) || clean(title))].some((word) => wordsIn(linkName).has(word));
-	if (generic) return { title: linkName, details: '', price: '', store: storeName(host), image: '', partial: true };
+	if (generic) return { title: linkName, details: '', price: '', store: storeLabel(host), image: '', partial: true };
 
 	const fullTitle = clean(product?.name) || page.title || clean(meta['og:title']) || clean(meta['twitter:title']) || clean(title);
 	const name = shortTitle(fullTitle);
@@ -291,7 +264,7 @@ export async function readProduct(response, pageUrl) {
 		details: shorten(clean(product?.description) || clean(meta['og:description']) || page.bullets.join(' ') || clean(meta.description) || (name === fullTitle ? '' : fullTitle)),
 		price:
 			formatPrice(amount ?? meta['product:price:amount'] ?? meta['og:price:amount'], currency ?? meta['product:price:currency'] ?? meta['og:price:currency']) || page.salePrice || page.mainPrice || page.price,
-		store: clean(meta['og:site_name']) || storeName(host),
+		store: clean(meta['og:site_name']) || storeLabel(host),
 		image: absolute
 	};
 }

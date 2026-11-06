@@ -19,6 +19,7 @@ export const actions = {
 		const user = requireUser(locals, url);
 		const f = await request.formData();
 		if (!(await checkPassword(user, String(f.get('current') ?? '')))) return fail(400, { deleteError: 'Your password is not right.' });
+		if (user.is_admin) return fail(400, { deleteError: 'You run this site, so your account has to stay.' });
 		await deleteUser(locals.env, user);
 		cookies.delete(SESSION_COOKIE, sessionCookie(url));
 		redirect(303, '/login');
