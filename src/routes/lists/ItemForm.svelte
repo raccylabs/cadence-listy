@@ -47,7 +47,7 @@
 	action={item ? '?/updateItem' : '?/addItem'}
 	enctype="multipart/form-data"
 	class="grid"
-	use:enhance={() => {
+	use:enhance={({ formElement }) => {
 		busy = true;
 		error = '';
 		warning = '';
@@ -62,7 +62,7 @@
 			lookupNote = '';
 			if (!item) {
 				f = blank();
-				document.getElementById('new-photo').value = '';
+				formElement.reset();
 			}
 			onsaved();
 		};
