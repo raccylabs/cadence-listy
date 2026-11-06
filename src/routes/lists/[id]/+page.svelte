@@ -210,15 +210,15 @@
 		padding: 0;
 		border: 0;
 		background: none;
-		color: #000;
+		color: var(--fg);
 		font-size: 20px;
 		line-height: 1;
 		cursor: grab;
 		touch-action: none;
 	}
 	.dragging {
-		background: #ffc900;
-		box-shadow: 5px 5px 0 #000;
+		background: #fdf0d4;
+		box-shadow: 0 14px 30px -12px rgba(59, 42, 37, 0.35);
 	}
 	.dragging .grip {
 		cursor: grabbing;
@@ -230,8 +230,10 @@
 	.item {
 		margin-bottom: 8px;
 		padding: 10px;
-		border: 2px solid var(--border);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
+		background: #fffdf9;
+		box-shadow: 0 1px 2px rgba(59, 42, 37, 0.06), 0 8px 24px -10px rgba(59, 42, 37, 0.2);
 	}
 	.line {
 		display: flex;

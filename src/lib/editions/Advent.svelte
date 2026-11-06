@@ -29,7 +29,6 @@
 		font-size: 30px;
 		font-weight: 400;
 		line-height: 1.1;
-		text-transform: uppercase;
 	}
 	.doors {
 		display: grid;
@@ -39,28 +38,30 @@
 	button {
 		aspect-ratio: 1;
 		padding: 0;
-		border: 2px solid #000;
-		border-radius: 6px;
-		background: #fff;
-		color: #000;
-		font: 700 14px var(--ed-mono);
+		border: 0;
+		border-radius: 12px;
+		background: var(--ed-pop-4);
+		color: var(--ed-ink);
+		font: 600 14px var(--ed-body);
 		cursor: pointer;
 	}
 	button:disabled {
-		background: transparent;
-		opacity: 0.5;
+		background: var(--ed-paper);
+		color: var(--ed-muted);
 		cursor: default;
 	}
 	.today {
 		background: var(--ed-pop-3);
+		color: var(--ed-ink);
 	}
 	.open {
-		background: #000;
+		background: var(--ed-ink);
 		color: #fff;
 	}
 	p {
 		margin: 12px 0 0;
-		font: 400 14px var(--ed-mono);
+		font: 400 14px var(--ed-body);
+		color: var(--ed-muted);
 	}
 	@media (max-width: 640px) {
 		.doors {

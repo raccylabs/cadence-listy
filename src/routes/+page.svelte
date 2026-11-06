@@ -67,8 +67,10 @@
 		align-items: center;
 		gap: 12px;
 		padding: 12px;
-		border: 2px solid var(--border);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
+		background: #fffdf9;
+		box-shadow: 0 1px 2px rgba(59, 42, 37, 0.06), 0 8px 24px -10px rgba(59, 42, 37, 0.2);
 		color: var(--fg);
 		text-decoration: none;
 	}
@@ -93,8 +95,10 @@
 		align-items: flex-start;
 		gap: 8px;
 		padding: 14px;
-		border: 2px solid var(--border);
+		border: 1px solid var(--border);
 		border-radius: var(--radius);
+		background: #fffdf9;
+		box-shadow: 0 1px 2px rgba(59, 42, 37, 0.06), 0 8px 24px -10px rgba(59, 42, 37, 0.2);
 	}
 	.pick {
 		position: relative;

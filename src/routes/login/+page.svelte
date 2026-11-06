@@ -46,6 +46,5 @@
 		font-family: 'Anton', Impact, sans-serif;
 		font-size: 44px;
 		font-weight: 400;
-		text-transform: uppercase;
 	}
 </style>

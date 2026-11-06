@@ -61,15 +61,16 @@
 	}
 	.string svg {
 		flex: none;
+		color: var(--ed-ink, #3b2a25);
 	}
 	.string path:first-child {
 		fill: none;
-		stroke: #000;
+		stroke: currentColor;
 		stroke-width: 3;
 	}
 	.bulb {
 		fill: var(--c);
-		stroke: #000;
+		stroke: currentColor;
 		stroke-width: 2;
 	}
 	.b0 { --c: #f0484b; }
@@ -90,12 +91,12 @@
 		}
 	}
 	.flag.f0 { fill: #ffd23f;
-		stroke: #000;
+		stroke: currentColor;
 		stroke-width: 2; }
 	.flag.f1 { fill: #ff7a59;
-		stroke: #000;
+		stroke: currentColor;
 		stroke-width: 2; }
-	.flag.f2 { fill: #ffffff; stroke: #000; stroke-width: 2; }
+	.flag.f2 { fill: #ffffff; stroke: currentColor; stroke-width: 2; }
 
 	.fall {
 		position: fixed;
@@ -111,13 +112,13 @@
 	.flake {
 		border-radius: 50%;
 		background: #fff;
-		border: 1px solid #000;
+		border: 1px solid rgba(59, 42, 37, 0.3);
 	}
 	.bit {
 		opacity: 0.6;
 	}
 	.bit {
-		border: 1px solid #000;
+		border: 1px solid rgba(59, 42, 37, 0.3);
 	}
 	.bit.f0 { background: #ff7a59; }
 	.bit.f1 { background: #ffd23f; }

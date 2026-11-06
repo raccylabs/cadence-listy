@@ -22,11 +22,10 @@
 		align-items: center;
 		gap: 12px;
 		box-sizing: border-box;
-		padding: 8px 14px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		padding: 6px 20px 6px 16px;
+		border-radius: 999px;
 		background: var(--ed-pop-3);
-		color: #000;
+		color: var(--ed-ink);
 	}
 	.num {
 		font-family: var(--ed-display);
@@ -35,14 +34,12 @@
 	}
 	.label {
 		max-width: 11ch;
-		font: 700 12px/1.25 var(--ed-mono);
-		text-transform: uppercase;
+		font: 600 13px/1.25 var(--ed-body);
 	}
 	.today {
 		font-family: var(--ed-display);
 		font-size: 28px;
 		line-height: 1.1;
-		text-transform: uppercase;
 	}
 	.spot {
 		flex: none;

@@ -22,7 +22,7 @@
 		padding: 24px;
 		box-sizing: border-box;
 		background: var(--ed-paper);
-		color: #000;
+		color: var(--ed-ink);
 		font-family: var(--ed-body);
 		text-align: center;
 	}
@@ -32,7 +32,6 @@
 		font-size: 56px;
 		font-weight: 400;
 		line-height: 1.05;
-		text-transform: uppercase;
 	}
 	p {
 		max-width: 34ch;

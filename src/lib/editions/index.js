@@ -16,7 +16,6 @@ export const EDITIONS = {
 		tiers: ['Top of the list', 'Would love', 'Stocking stuffers'],
 		spots: ['gift', 'stocking', 'cane', 'mug', 'tree', 'snowman'],
 		countdownSpot: 'tree',
-		vignettes: ['stocking', 'snowman', 'cane', 'mug'],
 		decor: [
 			{ id: 'lights', label: 'Christmas lights', on: true, modes: [['twinkle', 'Twinkle'], ['chase', 'Chase'], ['steady', 'Steady']] },
 			{ id: 'snow', label: 'Falling snow', on: false },
@@ -39,7 +38,6 @@ export const EDITIONS = {
 		tiers: ['Top of the list', 'Would love', 'Little extras'],
 		spots: ['gift', 'cake', 'balloon', 'hat'],
 		countdownSpot: 'cake',
-		vignettes: ['cake', 'hat', 'balloon', 'gift'],
 		decor: [
 			{ id: 'bunting', label: 'String of pennants', on: true },
 			{ id: 'confetti', label: 'Falling confetti', on: false },

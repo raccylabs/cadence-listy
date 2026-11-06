@@ -1,35 +1,36 @@
 /* Edition themes. Each one only sets these variables; layout lives on the share page. */
 .edition {
-	--ed-paper: #f6f4ec;
-	--ed-card: #fff;
-	--ed-ink: #000;
-	--ed-muted: #3d3d3a;
+	--ed-paper: #f8f1e7;
+	--ed-card: #fffdf9;
+	--ed-ink: #3b2a25;
+	--ed-muted: #7a665d;
+	--ed-line: rgba(59, 42, 37, 0.1);
+	--ed-shadow: 0 1px 2px rgba(59, 42, 37, 0.06), 0 8px 24px -10px rgba(59, 42, 37, 0.22);
+	--ed-shadow-up: 0 2px 4px rgba(59, 42, 37, 0.08), 0 18px 36px -14px rgba(59, 42, 37, 0.3);
 	--ed-pop-1: #e5383b;
-	--ed-pop-1-text: #000;
 	--ed-pop-2: #1f9e74;
 	--ed-pop-3: #ffc900;
 	--ed-pop-4: #b8dcf0;
 	--ed-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
-	--ed-mono: 'Space Mono', ui-monospace, monospace;
 	--ed-body: 'Inter Tight Variable', system-ui, sans-serif;
 }
 
 .edition[data-edition='christmas'] {
-	--ed-paper: #f6f4ec;
-	--ed-pop-1: #f0484b;
-	--ed-pop-2: #2fae84;
-	--ed-pop-3: #ffc900;
-	--ed-pop-4: #b8dcf0;
+	--ed-paper: #f8f1e7;
+	--ed-pop-1: #e2574c;
+	--ed-pop-2: #4f9f7d;
+	--ed-pop-3: #f5c451;
+	--ed-pop-4: #cfe3ec;
 }
 
 .edition[data-edition='birthday'] {
-	--ed-paper: #f7f2f4;
-	--ed-pop-1: #ff7a59;
-	--ed-pop-2: #27b5b0;
-	--ed-pop-3: #ffd23f;
-	--ed-pop-4: #c9bcff;
+	--ed-paper: #f9f0ee;
+	--ed-pop-1: #e9806a;
+	--ed-pop-2: #5aa9a3;
+	--ed-pop-3: #f5c96a;
+	--ed-pop-4: #ddd2f3;
 }
 
 html:has(.edition[data-edition]) {
-	background: #f6f4ec;
+	background: #f8f1e7;
 }

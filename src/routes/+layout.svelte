@@ -1,8 +1,6 @@
 <script>
 	import '@fontsource-variable/inter-tight/index.css';
 	import '@fontsource/anton/400.css';
-	import '@fontsource/space-mono/400.css';
-	import '@fontsource/space-mono/700.css';
 	import '../app.css';
 	import { page } from '$app/state';
 
@@ -30,8 +28,8 @@
 
 <style>
 	header {
-		border-bottom: 2px solid #000;
-		background: #fff;
+		border-bottom: 1px solid var(--border);
+		background: #fffdf9;
 	}
 	.bar {
 		display: flex;
@@ -46,35 +44,32 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		color: #000;
+		color: var(--fg);
 		font-family: 'Anton', Impact, sans-serif;
 		font-size: 22px;
 		text-decoration: none;
-		text-transform: uppercase;
 	}
 	.mark {
 		width: 28px;
 		height: 28px;
-		border: 2px solid #000;
-		border-radius: 6px;
+		border-radius: 9px;
 		background: repeating-linear-gradient(-45deg, var(--red) 0 6px, #fff 6px 12px);
 	}
 	nav {
 		display: flex;
 		align-items: center;
 		gap: 16px;
-		font: 700 13px 'Space Mono', monospace;
-		text-transform: uppercase;
+		font-size: 15px;
+		font-weight: 600;
 	}
 	nav a,
 	nav button {
 		padding: 0;
 		border: 0;
 		background: none;
-		color: #000;
+		color: var(--fg);
 		font: inherit;
 		text-decoration: none;
-		text-transform: inherit;
 		cursor: pointer;
 	}
 	nav a:hover,

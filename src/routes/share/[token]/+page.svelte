@@ -86,6 +86,18 @@
 					<h1>{list.title}</h1>
 					{#if list.message}<p class="msg">{list.message}</p>{/if}
 					{#if options.countdown}<Countdown days={list.days} {edition} />{/if}
+					{#if list.items.length}
+						<div class="export">
+							<button type="button" class="get primary" onclick={() => window.print()}>
+								<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z M14 3v5h5 M10 13h6 M10 17h6" /></svg>
+								Save as PDF
+							</button>
+							<a class="get" href="/share/{page.params.token}/list.csv" download data-sveltekit-reload>
+								<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14" /></svg>
+								Download CSV
+							</a>
+						</div>
+					{/if}
 				</div>
 				<div class="art">
 					<Scene edition={edition.id} />
@@ -105,7 +117,13 @@
 
 			<div class="catalog">
 				{#each board as item, i (item.id)}
-					<article class="product" class:top={item.featured && options.spotlight} style="--n:{Math.min(i, 8)}">
+					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+					<article
+						class="product"
+						class:top={item.featured && options.spotlight}
+						style="--n:{Math.min(i, 8)}"
+						onclick={(e) => !e.target.closest('a, button') && openBox(item, 'details')}
+					>
 						<div class="shot">
 							{#if item.photo}
 								<img src={photo(item)} alt={item.title} loading="lazy" />
@@ -115,13 +133,12 @@
 							{#if item.featured && options.spotlight}<p class="badge">Top pick</p>{/if}
 						</div>
 						<div class="text">
-							<h2>{item.title}</h2>
+							<h2><button type="button" class="open" onclick={() => openBox(item, 'details')}>{item.title}</button></h2>
 							{#if item.price}<p class="price">{item.price}</p>{/if}
 							{#if item.store}<p class="store">{item.store}</p>{/if}
 							{#if item.details}<p class="fine">{item.details}</p>{/if}
 							<div class="acts">
 								{#if item.url}<a class="buy" href={item.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
-								{#if item.details}<button type="button" class="note-link" onclick={() => openBox(item, 'details')}>Details</button>{/if}
 								<button type="button" class="note-link" onclick={() => openBox(item, 'note')}>Leave a note</button>
 							</div>
 						</div>
@@ -135,18 +152,7 @@
 				<div class="panel"><Advent items={list.items} now={list.now} year={list.event_date.slice(0, 4)} /></div>
 			{/if}
 
-			{#if list.items.length}
-				<div class="export">
-					<button type="button" onclick={() => window.print()}>Save as PDF</button>
-					<a href="/share/{page.params.token}/list.csv" download data-sveltekit-reload>Download CSV</a>
-				</div>
-			{/if}
-
-			<ul class="vignettes" aria-hidden="true">
-				{#each edition.vignettes as spot}
-					<li><div class="disc"><Spot name={spot} /></div></li>
-				{/each}
-			</ul>
+			<div class="cane" aria-hidden="true"></div>
 
 			<section class="foot">
 				<div>
@@ -170,7 +176,7 @@
 							{#if boxItem.store}<p class="store">{boxItem.store}</p>{/if}
 						</div>
 					</div>
-					<p class="all">{boxItem.details}</p>
+					{#if boxItem.details}<p class="all">{boxItem.details}</p>{/if}
 					<div class="acts">
 						{#if boxItem.url}<a class="buy" href={boxItem.url} target="_blank" rel="noopener noreferrer">View item</a>{/if}
 						<button type="button" class="note-link" onclick={() => openBox(boxItem, 'note')}>Leave a note</button>
@@ -192,7 +198,7 @@
 		box-sizing: border-box;
 		min-height: 100vh;
 		background: var(--ed-paper);
-		color: #000;
+		color: var(--ed-ink);
 		font-family: var(--ed-body);
 		font-size: 16px;
 		line-height: 1.45;
@@ -213,16 +219,17 @@
 	}
 	.preview {
 		margin-bottom: 12px;
-		font: 400 13px var(--ed-mono);
+		font: 400 13px var(--ed-body);
 	}
 	.banner {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		overflow: hidden;
 		min-height: 360px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-card);
+		box-shadow: var(--ed-shadow);
 	}
 	.words {
 		display: flex;
@@ -238,34 +245,28 @@
 		font-size: clamp(50px, 6.6vw, 88px);
 		font-weight: 400;
 		line-height: 1.02;
-		text-transform: uppercase;
 	}
 	.msg {
 		max-width: 44ch;
 		font-size: 17px;
 	}
 	.buy {
-		font-family: var(--ed-mono);
+		font-family: var(--ed-body);
 		font-weight: 700;
 		text-decoration: none;
-		text-transform: uppercase;
 	}
 	.art {
 		position: relative;
 		overflow: hidden;
 		min-height: 240px;
-		border-left: 2px solid #000;
+		border-left: 1px solid var(--ed-line);
 		background: var(--ed-paper);
 	}
 	.art :global(.string) {
 		z-index: 1;
 	}
 	.stripes {
-		height: 18px;
-		margin-top: 12px;
-		border: 2px solid #000;
-		border-radius: 8px;
-		background: repeating-linear-gradient(-45deg, var(--ed-pop-1) 0 14px, #fff 14px 28px);
+		margin-top: 14px;
 	}
 	.pills {
 		display: flex;
@@ -277,19 +278,18 @@
 	.pills button {
 		flex: none;
 		padding: 8px 14px;
-		border: 2px solid #000;
-		border-radius: 6px;
+		border: 1px solid var(--ed-line);
+		border-radius: 999px;
 		background: #fff;
-		color: #000;
-		font: 700 13px var(--ed-mono);
-		text-transform: uppercase;
+		color: var(--ed-ink);
+		font: 600 14px var(--ed-body);
 	}
 	.pills button:hover {
 		background: var(--ed-pop-3);
 	}
 	.pills .on,
 	.pills .on:hover {
-		background: #000;
+		background: var(--ed-ink);
 		color: #fff;
 	}
 	/* Products on a page: every box is the same size, photo on top and words below. */
@@ -305,12 +305,25 @@
 		flex-direction: column;
 		overflow: hidden;
 		box-sizing: border-box;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-card);
+		box-shadow: var(--ed-shadow);
 	}
 	.product.top {
 		background: var(--ed-pop-4);
+	}
+	.product {
+		cursor: pointer;
+	}
+	.open {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
 	}
 	/* Motion: boxes pop in once, lift when pointed at, and the drawings wobble when you reach them. */
 	.product {
@@ -319,8 +332,8 @@
 		transition: transform 0.14s ease, box-shadow 0.14s ease;
 	}
 	.product:hover {
-		box-shadow: 6px 6px 0 #000;
-		transform: translate(-3px, -3px);
+		box-shadow: var(--ed-shadow-up);
+		transform: translateY(-4px);
 	}
 	.product:hover .shot img,
 	.product:hover .blank :global(svg) {
@@ -336,12 +349,6 @@
 	.pills button:active,
 	.note-form button:active {
 		transform: translate(2px, 2px);
-	}
-	.vignettes li:hover .disc {
-		animation: wobble 0.6s ease-in-out;
-	}
-	.vignettes li:hover .disc :global(svg) {
-		animation: hop 0.6s ease-in-out;
 	}
 	.note-box[open] {
 		animation: pop 0.25s cubic-bezier(0.2, 1.5, 0.4, 1);
@@ -382,9 +389,7 @@
 		.note-box[open]::backdrop,
 		.sent,
 		.product:hover .shot img,
-		.product:hover .blank :global(svg),
-		.vignettes li:hover .disc,
-		.vignettes li:hover .disc :global(svg) {
+		.product:hover .blank :global(svg) {
 			animation: none;
 		}
 		.product:hover {
@@ -395,8 +400,10 @@
 		position: relative;
 		flex: none;
 		height: 220px;
-		border-bottom: 2px solid #000;
+		margin: 10px 10px 0;
+		border-radius: 16px;
 		background: #fff;
+		overflow: hidden;
 	}
 	.shot img {
 		display: block;
@@ -426,10 +433,10 @@
 		top: 8px;
 		left: 8px;
 		padding: 2px 8px;
-		background: #000;
+		border-radius: 999px;
+		background: var(--ed-ink);
 		color: #fff;
-		font: 700 12px var(--ed-mono);
-		text-transform: uppercase;
+		font: 700 12px var(--ed-body);
 	}
 	.product h2 {
 		display: -webkit-box;
@@ -444,11 +451,10 @@
 	}
 	.price {
 		margin-top: 6px;
-		font: 700 16px var(--ed-mono);
+		font: 700 16px var(--ed-body);
 	}
 	.store {
-		font: 400 13px var(--ed-mono);
-		text-transform: uppercase;
+		font: 400 13px var(--ed-body);
 	}
 	.fine {
 		display: -webkit-box;
@@ -471,19 +477,20 @@
 	}
 	.buy {
 		padding: 6px 10px;
-		background: #000;
+		border-radius: 999px;
+		background: var(--ed-ink);
 		color: #fff;
 		font-size: 12px;
 	}
 	.buy:hover {
 		background: var(--ed-pop-1);
-		color: #000;
+		color: var(--ed-ink);
 	}
 	.note-link {
 		padding: 0;
 		border: 0;
 		background: none;
-		color: #000;
+		color: var(--ed-ink);
 		font: inherit;
 		text-decoration: underline;
 		text-underline-offset: 3px;
@@ -492,10 +499,10 @@
 		box-sizing: border-box;
 		width: min(440px, calc(100vw - 32px));
 		padding: 22px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-pop-3);
-		color: #000;
+		color: var(--ed-ink);
 		font-family: var(--ed-body);
 	}
 	.note-box::backdrop {
@@ -507,7 +514,6 @@
 		font-size: 34px;
 		font-weight: 400;
 		line-height: 1.1;
-		text-transform: uppercase;
 	}
 	.note-box.wide {
 		width: min(560px, calc(100vw - 32px));
@@ -523,8 +529,8 @@
 		flex: none;
 		width: 130px;
 		height: 130px;
-		border: 2px solid #000;
-		border-radius: 6px;
+		border: 1px solid var(--ed-line);
+		border-radius: 14px;
 		object-fit: contain;
 	}
 	.full h2 {
@@ -544,81 +550,76 @@
 		top: 16px;
 		right: 16px;
 		padding: 4px 8px;
-		border: 2px solid #000;
+		border: 1px solid var(--ed-line);
 		background: #fff;
-		color: #000;
-		font: 700 12px var(--ed-mono);
-		text-transform: uppercase;
+		color: var(--ed-ink);
+		font: 700 12px var(--ed-body);
 	}
 	.empty {
 		padding: 24px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-card);
 		font-size: 18px;
+		box-shadow: var(--ed-shadow);
 	}
 	.panel {
 		margin-top: 12px;
 		padding: 18px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-card);
+		box-shadow: var(--ed-shadow);
 	}
 	.export {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 12px;
+		gap: 10px;
 	}
-	.export button,
-	.export a {
-		padding: 8px 14px;
-		border: 2px solid #000;
-		border-radius: 6px;
-		background: #fff;
-		color: #000;
-		font: 700 13px var(--ed-mono);
-		text-decoration: none;
-		text-transform: uppercase;
-	}
-	.export button:hover,
-	.export a:hover {
-		background: var(--ed-pop-3);
-	}
-	.vignettes {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 12px;
-		margin: 12px 0 0;
-		padding: 20px;
-		border: 2px solid #000;
-		border-radius: 8px;
-		background: var(--ed-card);
-		list-style: none;
-	}
-	.vignettes li {
-		display: flex;
-		flex-direction: column;
+	.get {
+		display: inline-flex;
 		align-items: center;
-		gap: 12px;
+		gap: 8px;
+		padding: 11px 18px;
+		border: 1px solid var(--ed-line);
+		border-radius: 999px;
+		background: #fff;
+		color: var(--ed-ink);
+		font: 600 15px var(--ed-body);
+		text-decoration: none;
+		box-shadow: var(--ed-shadow);
+		transition: transform 0.12s ease, box-shadow 0.12s ease;
 	}
-	.disc {
-		box-sizing: border-box;
-		width: 150px;
-		height: 150px;
-		padding: 22px;
-		border: 2px solid #000;
-		border-radius: 50%;
-		background: var(--ed-pop-3);
-	}
-	.vignettes li:nth-child(2) .disc {
-		background: var(--ed-pop-4);
-	}
-	.vignettes li:nth-child(3) .disc {
-		background: var(--ed-pop-2);
-	}
-	.vignettes li:nth-child(4) .disc {
+	.get.primary {
+		border-color: transparent;
 		background: var(--ed-pop-1);
+		color: #fff;
+	}
+	.get:hover {
+		box-shadow: var(--ed-shadow-up);
+		transform: translateY(-2px);
+	}
+	.get svg {
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	/* A candy cane laid flat: rounded ends, soft shine, stripes on the slant. */
+	.cane,
+	.stripes {
+		height: 16px;
+		border-radius: 999px;
+		background:
+			linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 45%, rgba(59, 42, 37, 0.1)),
+			repeating-linear-gradient(-55deg, var(--ed-pop-1) 0 12px, #fffdf9 12px 24px);
+		box-shadow: 0 2px 6px -2px rgba(59, 42, 37, 0.3);
+	}
+	.cane {
+		margin: 28px 4px 16px;
 	}
 	.letter {
 		width: 120px;
@@ -631,9 +632,10 @@
 		gap: 24px;
 		margin-top: 12px;
 		padding: 24px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-pop-1);
+		box-shadow: var(--ed-shadow);
 	}
 	.foot h2 {
 		margin: 0 0 4px;
@@ -641,7 +643,6 @@
 		font-size: 44px;
 		font-weight: 400;
 		line-height: 1.1;
-		text-transform: uppercase;
 	}
 	.note-form {
 		position: relative;
@@ -655,18 +656,17 @@
 	.note-form label {
 		display: grid;
 		gap: 4px;
-		font: 700 12px var(--ed-mono);
-		text-transform: uppercase;
+		font: 700 12px var(--ed-body);
 	}
 	input,
 	textarea {
 		box-sizing: border-box;
 		width: 100%;
 		padding: 9px 11px;
-		border: 2px solid #000;
-		border-radius: 6px;
+		border: 1px solid var(--ed-line);
+		border-radius: 14px;
 		background: #fff;
-		color: #000;
+		color: var(--ed-ink);
 		font: 400 16px var(--ed-body);
 	}
 	.trap {
@@ -682,14 +682,13 @@
 		justify-self: start;
 		padding: 10px 16px;
 		border: 0;
-		border-radius: 0;
-		background: #000;
+		border-radius: 999px;
+		background: var(--ed-ink);
 		color: #fff;
-		font: 700 13px var(--ed-mono);
-		text-transform: uppercase;
+		font: 700 13px var(--ed-body);
 	}
 	.ed-root :focus-visible {
-		outline: 3px solid #000;
+		outline: 3px solid var(--ed-pop-1);
 		outline-offset: 2px;
 	}
 	.err {
@@ -698,15 +697,15 @@
 	}
 	.sent {
 		margin-top: 8px;
-		font: 700 14px var(--ed-mono);
+		font: 700 14px var(--ed-body);
 	}
 	.lock {
 		box-sizing: border-box;
 		max-width: 440px;
 		margin: 16vh auto 0;
 		padding: 28px;
-		border: 2px solid #000;
-		border-radius: 8px;
+		border: 1px solid var(--ed-line);
+		border-radius: 22px;
 		background: var(--ed-pop-3);
 	}
 	.lock h1 {
@@ -751,7 +750,6 @@
 		.preview,
 		.panel,
 		.export,
-		.vignettes,
 		.foot,
 		.note-link,
 		.note-box,
@@ -781,7 +779,7 @@
 		.buy {
 			padding: 0;
 			background: none;
-			color: #000;
+			color: var(--ed-ink);
 			font-size: 10px;
 			text-transform: none;
 			word-break: break-all;
@@ -805,7 +803,7 @@
 		.art {
 			height: 210px;
 			min-height: 0;
-			border-top: 2px solid #000;
+			border-top: 1px solid var(--ed-line);
 			border-left: 0;
 		}
 		.catalog {
@@ -826,15 +824,6 @@
 		}
 		.fine {
 			font-size: 13px;
-		}
-		.vignettes {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			padding: 14px;
-		}
-		.disc {
-			width: 112px;
-			height: 112px;
-			padding: 16px;
 		}
 		.letter {
 			display: none;

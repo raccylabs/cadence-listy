@@ -197,7 +197,7 @@
 	.found img {
 		width: 84px;
 		height: 84px;
-		border: 2px solid var(--border);
+		border: 1px solid var(--border);
 		border-radius: 10px;
 		object-fit: cover;
 	}

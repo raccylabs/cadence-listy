@@ -4,7 +4,7 @@
 </script>
 
 <svg viewBox="0 0 120 120" aria-hidden="true">
-	<g fill="none" stroke="#000" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+	<g fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
 		{#if name === 'gift'}
 			<rect x="22" y="50" width="76" height="56" fill="var(--ed-pop-1)" />
 			<rect x="14" y="36" width="92" height="18" fill="var(--ed-pop-2)" />
@@ -15,7 +15,7 @@
 			<rect x="32" y="12" width="54" height="22" rx="4" fill="#fff" />
 			<path d="M24 92c6 0 12 8 12 18" />
 		{:else if name === 'tree'}
-			<rect x="52" y="94" width="16" height="16" fill="#000" />
+			<rect x="52" y="94" width="16" height="16" fill="currentColor" />
 			<path d="M60 8 92 50H76l24 30H74l10 14H36l10-14H20l24-30H28Z" fill="var(--ed-pop-2)" />
 			<path d="m60 2 4 9h9l-7 6 3 9-9-5-9 5 3-9-7-6h9Z" fill="var(--ed-pop-3)" />
 			<circle cx="60" cy="48" r="5" fill="var(--ed-pop-1)" />
@@ -28,12 +28,12 @@
 		{:else if name === 'snowman'}
 			<circle cx="60" cy="82" r="28" fill="#fff" />
 			<circle cx="60" cy="38" r="20" fill="#fff" />
-			<path d="M40 24h40M48 24V8h24v16" fill="#000" />
+			<path d="M40 24h40M48 24V8h24v16" fill="currentColor" />
 			<path d="m60 40 18 4-18 3Z" fill="var(--ed-pop-1)" />
-			<circle cx="52" cy="33" r="1.5" fill="#000" />
-			<circle cx="68" cy="33" r="1.5" fill="#000" />
-			<circle cx="60" cy="74" r="2" fill="#000" />
-			<circle cx="60" cy="90" r="2" fill="#000" />
+			<circle cx="52" cy="33" r="1.5" fill="currentColor" />
+			<circle cx="68" cy="33" r="1.5" fill="currentColor" />
+			<circle cx="60" cy="74" r="2" fill="currentColor" />
+			<circle cx="60" cy="90" r="2" fill="currentColor" />
 		{:else if name === 'mug'}
 			<path d="M24 44h60v48c0 8-6 14-14 14H38c-8 0-14-6-14-14Z" fill="var(--ed-pop-1)" />
 			<path d="M84 54h8c16 0 16 32-2 32h-6" />
@@ -62,6 +62,7 @@
 
 <style>
 	svg {
+		color: var(--ed-ink, #3b2a25);
 		display: block;
 		width: 100%;
 		height: 100%;
