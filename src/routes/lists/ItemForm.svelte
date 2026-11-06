@@ -31,9 +31,11 @@
 			if (data.found) {
 				for (const field of ['title', 'store', 'price', 'details']) if (data.found[field]) f[field] = data.found[field];
 				const missing = ['title', 'price', 'image'].filter((x) => !data.found[x]).map((x) => (x === 'image' ? 'photo' : x === 'title' ? 'name' : x));
-				lookupNote = missing.length ? `Filled in what the store shared. Missing: ${missing.join(', ')}.` : 'Filled in from the store. Check it before saving.';
+				lookupNote = data.found.partial
+					? "This store blocks automatic lookups, so we used the name in the link. Add the price and a photo yourself."
+					: missing.length ? `Filled in what the store shared. Missing: ${missing.join(', ')}.` : 'Filled in from the store. Check it before saving.';
 			} else {
-				lookupNote = data.error ?? "This store didn't share its details. Fill them in below.";
+				lookupNote = data.error ?? "This store blocks automatic lookups. Fill in the details below.";
 			}
 		} catch {
 			lookupNote = "Couldn't reach that page. Fill in the details below.";

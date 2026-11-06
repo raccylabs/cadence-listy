@@ -50,6 +50,55 @@ export function publicUrl(raw, env) {
 	return u;
 }
 
+const STORE_NAMES = {
+	'bestbuy.com': 'Best Buy',
+	'walmart.com': 'Walmart',
+	'target.com': 'Target',
+	'tcgplayer.com': 'TCGplayer',
+	'ebay.com': 'eBay',
+	'costco.com': 'Costco',
+	'homedepot.com': 'Home Depot',
+	'lowes.com': "Lowe's"
+};
+const storeName = (host) => {
+	const name = host.replace(/^www\./, '');
+	return STORE_NAMES[name] ?? (/(^|\.)amazon\./.test(name) ? 'Amazon' : name);
+};
+
+// Bot walls come back as ordinary pages, so spot them by their wording.
+const BOT_WALL = /robot or human|are you a (human|robot)|access denied|just a moment|attention required|verify you are|pardon our interruption|captcha|security check/i;
+
+/** Words worth comparing: lower case, and long enough to mean something. */
+const wordsIn = (text) => new Set(text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2));
+
+/** The product name most stores spell out in their links, like /elite-trainer-box/. */
+function nameFromLink(url) {
+	const slug = url.pathname.split('/').filter((part) => /^[a-z0-9]+(-[a-z0-9]+){2,}$/i.test(part)).sort((a, b) => b.length - a.length)[0];
+	if (!slug) return '';
+	const acronym = /^(tcg|usb|hdmi|ssd|led|\d*[a-z]+\d+[a-z0-9]*)$/i;
+	const word = (w) => (acronym.test(w) ? w.toUpperCase() : /^\d/.test(w) ? w : w[0].toUpperCase() + w.slice(1));
+	return shortTitle(slug.split('-').map(word).join(' '));
+}
+
+/** What a link alone can tell us, for stores that won't show their page to a server. */
+export function detailsFromLink(url) {
+	const title = nameFromLink(url);
+	return title ? { title, details: '', price: '', store: storeName(url.hostname), image: '', partial: true } : null;
+}
+
+/** TCGplayer builds its pages in the browser, but its photos follow a pattern based on the product number. */
+async function storeImageGuess(url) {
+	const id = /(^|\.)tcgplayer\.com$/.test(url.hostname) && url.pathname.match(/^\/product\/(\d+)/)?.[1];
+	if (!id) return '';
+	const image = `https://tcgplayer-cdn.tcgplayer.com/product/${id}_in_1000x1000.jpg`;
+	try {
+		const res = await fetch(image, { method: 'HEAD', signal: AbortSignal.timeout(4000) });
+		return res.ok && /^image\//.test(res.headers.get('content-type') ?? '') ? image : '';
+	} catch {
+		return '';
+	}
+}
+
 /** Stop reading after `max` bytes, or as soon as `enough` says there's no need to go on. */
 function capped(body, max, enough) {
 	let seen = 0;
@@ -113,7 +162,8 @@ export async function readProduct(response, pageUrl) {
 	let title = '';
 	// For stores like Amazon that keep these in the page itself, not in product data.
 	const page = { title: '', salePrice: '', mainPrice: '', price: '', landing: '', image: '', bullets: [] };
-	const host = new URL(pageUrl).hostname.replace(/^www\./, '');
+	const link = new URL(pageUrl);
+	const host = link.hostname.replace(/^www\./, '');
 	const amazon = /(^|\.)amazon\./.test(host);
 	// Amazon keeps product photos in /images/I/ and site graphics, like Prime logos, in /images/G/.
 	const isProductImage = (src) => {
@@ -222,6 +272,17 @@ export async function readProduct(response, pageUrl) {
 	} catch {
 		// No usable image.
 	}
+	if (BOT_WALL.test(clean(title)) || BOT_WALL.test(clean(meta['og:title']))) return null;
+	// Without real product data, a page whose title has nothing to do with its link is only showing
+	// the store's site-wide tagline, so none of its text is about this product.
+	const linkName = nameFromLink(link);
+	const generic =
+		!product &&
+		!page.title &&
+		linkName &&
+		![...wordsIn(clean(meta['og:title']) || clean(title))].some((word) => wordsIn(linkName).has(word));
+	if (generic) return { title: linkName, details: '', price: '', store: storeName(host), image: '', partial: true };
+
 	const fullTitle = clean(product?.name) || page.title || clean(meta['og:title']) || clean(meta['twitter:title']) || clean(title);
 	const name = shortTitle(fullTitle);
 	return {
@@ -230,24 +291,25 @@ export async function readProduct(response, pageUrl) {
 		details: shorten(clean(product?.description) || clean(meta['og:description']) || page.bullets.join(' ') || clean(meta.description) || (name === fullTitle ? '' : fullTitle)),
 		price:
 			formatPrice(amount ?? meta['product:price:amount'] ?? meta['og:price:amount'], currency ?? meta['product:price:currency'] ?? meta['og:price:currency']) || page.salePrice || page.mainPrice || page.price,
-		store: clean(meta['og:site_name']) || (amazon ? 'Amazon' : host),
+		store: clean(meta['og:site_name']) || storeName(host),
 		image: absolute
 	};
 }
 
-/** Look up a product page. Returns its details, or null if the page can't be read. */
+/** Look up a product page. Returns what it can, or null if the link tells us nothing. */
 export async function lookupProduct(env, raw) {
 	const url = publicUrl(raw, env);
 	if (!url) return null;
-	let res;
+	let found = null;
 	try {
-		res = await fetch(url, { headers: HEADERS, redirect: 'follow', signal: AbortSignal.timeout(8000) });
+		const res = await fetch(url, { headers: HEADERS, redirect: 'follow', signal: AbortSignal.timeout(6000) });
+		if (res.ok && res.body && /html/i.test(res.headers.get('content-type') ?? '')) found = await readProduct(res, res.url || url.href);
 	} catch {
-		return null;
+		// Blocked or too slow: fall through to what the link itself says.
 	}
-	if (!res.ok || !res.body || !/html/i.test(res.headers.get('content-type') ?? '')) return null;
-	const found = await readProduct(res, res.url || url.href);
-	return found.title || found.image ? found : null;
+	if (!found?.title && !found?.image) found = detailsFromLink(url);
+	if (found && !found.image) found.image = await storeImageGuess(url);
+	return found;
 }
 
 /** Download a product image. Returns its bytes and type, or null if that isn't possible. */
