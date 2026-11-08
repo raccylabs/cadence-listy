@@ -621,6 +621,16 @@
 	.cane {
 		margin: 28px 4px 16px;
 	}
+	/* Birthday: a band of pink frosting covered in sprinkles. */
+	[data-edition='birthday'] .cane,
+	[data-edition='birthday'] .stripes {
+		background-color: #f7c6d4;
+		background-image:
+			linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 50%, rgba(59, 42, 37, 0.06)),
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='16'%3E%3Cg stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 5l6 3' stroke='%235aa9a3'/%3E%3Cpath d='M17 11l5-4' stroke='%23f5c96a'/%3E%3Cpath d='M28 4l2 6' stroke='%239b7fd1'/%3E%3Cpath d='M37 9l6 2' stroke='%23fffdf9'/%3E%3Cpath d='M48 5l5 4' stroke='%23e9806a'/%3E%3Cpath d='M60 11l4-6' stroke='%235aa9a3'/%3E%3Cpath d='M68 7l3 3' stroke='%23f5c96a'/%3E%3Cpath d='M10 12l3-1' stroke='%23fffdf9'/%3E%3Cpath d='M54 13l4-1' stroke='%239b7fd1'/%3E%3C/g%3E%3C/svg%3E");
+		background-size: 100% 100%, 72px 16px;
+		background-repeat: no-repeat, repeat-x;
+	}
 	.letter {
 		width: 120px;
 		height: 120px;

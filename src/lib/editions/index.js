@@ -18,7 +18,7 @@ export const EDITIONS = {
 		countdownSpot: 'tree',
 		decor: [
 			{ id: 'lights', label: 'Christmas lights', on: true, modes: [['twinkle', 'Twinkle'], ['chase', 'Chase'], ['steady', 'Steady']] },
-			{ id: 'snow', label: 'Falling snow', on: false },
+			{ id: 'snow', label: 'Falling snow', on: true },
 			{ id: 'stripes', label: 'Candy-cane stripe', on: true }
 		],
 		widgets: [
@@ -40,8 +40,8 @@ export const EDITIONS = {
 		countdownSpot: 'cake',
 		decor: [
 			{ id: 'bunting', label: 'String of pennants', on: true },
-			{ id: 'confetti', label: 'Falling confetti', on: false },
-			{ id: 'stripes', label: 'Color stripe', on: true }
+			{ id: 'confetti', label: 'Falling confetti', on: true },
+			{ id: 'stripes', label: 'Sprinkle stripe', on: true }
 		],
 		widgets: [
 			{ id: 'countdown', label: 'Days until the big day', on: true },

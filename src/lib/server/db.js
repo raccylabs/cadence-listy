@@ -81,6 +81,11 @@ const MIGRATIONS = [
 			used_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
 			used_at    TEXT
 		)`
+	],
+	// Snow and confetti are on by default now, including on lists made before.
+	[
+		`UPDATE lists SET options = json_set(CASE WHEN json_valid(options) THEN options ELSE '{}' END, '$.snow', json('true')) WHERE edition = 'christmas'`,
+		`UPDATE lists SET options = json_set(CASE WHEN json_valid(options) THEN options ELSE '{}' END, '$.confetti', json('true')) WHERE edition = 'birthday'`
 	]
 ];
 
