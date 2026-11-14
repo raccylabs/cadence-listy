@@ -4,7 +4,6 @@
 	import { EDITIONS } from '$lib/editions/index.js';
 	import Decor from '$lib/editions/Decor.svelte';
 	import Countdown from '$lib/editions/Countdown.svelte';
-	import Advent from '$lib/editions/Advent.svelte';
 	import Scene from '$lib/editions/Scene.svelte';
 	import Spot from '$lib/editions/Spot.svelte';
 	import Ribbon from '$lib/editions/Ribbon.svelte';
@@ -151,10 +150,6 @@
 					<p class="empty">Nothing on this list yet. Check back soon.</p>
 				{/each}
 			</div>
-
-			{#if options.advent}
-				<div class="panel"><Advent items={list.items} now={list.now} year={list.event_date.slice(0, 4)} /></div>
-			{/if}
 
 			<div class="cane" aria-hidden="true"></div>
 

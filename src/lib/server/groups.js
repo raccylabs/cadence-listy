@@ -6,6 +6,7 @@ import { randomToken, sha256, sameText } from './auth.js';
 import { ValidationError } from './errors.js';
 import { hashPin, today, daysUntil } from './lists.js';
 import { EDITIONS, sceneFor } from '../editions/index.js';
+import { dropAdventImages } from './advent.js';
 
 const bad = (msg) => {
 	throw new ValidationError(msg);
@@ -83,6 +84,7 @@ export async function removeGroupPin(env, group) {
 }
 export async function deleteGroup(env, group) {
 	mustOwn(group);
+	await dropAdventImages(env, group.id);
 	await run(env, 'DELETE FROM family_groups WHERE id = ?', group.id);
 }
 
@@ -98,11 +100,13 @@ export const groupMembers = (env, group) =>
 export async function removeMember(env, group, userId) {
 	mustOwn(group);
 	if (Number(userId) === group.owner_id) bad("You can't remove yourself from your own group. Delete the group instead.");
+	await dropAdventImages(env, group.id, Number(userId));
 	await run(env, 'DELETE FROM family_members WHERE group_id = ? AND user_id = ?', group.id, Number(userId));
 }
 
 export async function leaveGroup(env, user, group) {
 	if (group.mine) bad("You made this group, so you can't leave it. Delete it instead.");
+	await dropAdventImages(env, group.id, user.id);
 	await run(env, 'DELETE FROM family_members WHERE group_id = ? AND user_id = ?', group.id, user.id);
 }
 

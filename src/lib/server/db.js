@@ -116,6 +116,35 @@ const MIGRATIONS = [
 		)`,
 		`CREATE INDEX family_members_user ON family_members(user_id)`,
 		`ALTER TABLE invites ADD COLUMN group_id INTEGER REFERENCES family_groups(id) ON DELETE SET NULL`
+	],
+	// The family advent calendar. member_id NULL is the door everyone gets unless they have their own.
+	[
+		`CREATE TABLE advent_doors (
+			id         INTEGER PRIMARY KEY,
+			group_id   INTEGER NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+			member_id  INTEGER REFERENCES users(id) ON DELETE CASCADE,
+			year       INTEGER NOT NULL,
+			day        INTEGER NOT NULL,
+			kind       TEXT NOT NULL DEFAULT 'note',
+			title      TEXT NOT NULL DEFAULT '',
+			message    TEXT NOT NULL DEFAULT '',
+			answer     TEXT NOT NULL DEFAULT '',
+			link       TEXT NOT NULL DEFAULT '',
+			image_key  TEXT,
+			image_size INTEGER NOT NULL DEFAULT 0,
+			image_v    INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE UNIQUE INDEX advent_doors_slot ON advent_doors(group_id, IFNULL(member_id, 0), year, day)`,
+		`CREATE TABLE advent_opens (
+			group_id  INTEGER NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+			user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			year      INTEGER NOT NULL,
+			day       INTEGER NOT NULL,
+			opened_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+			reaction  TEXT NOT NULL DEFAULT '',
+			used_at   TEXT,
+			PRIMARY KEY (group_id, user_id, year, day)
+		)`
 	]
 ];
 

@@ -24,6 +24,12 @@
 <div class="Subhead"><h2>{g.name}</h2></div>
 {#if form?.error}<div class="flash flash-error mb-3" role="alert">{form.error}</div>{/if}
 
+<a class="advent" href="/groups/{g.id}/advent">
+	<span class="doors" aria-hidden="true"><span>3</span><span>17</span><span>8</span><span>24</span></span>
+	<span><strong>Advent calendar</strong><span class="small">{g.mine ? 'Fill the doors with pictures, messages and surprises for each person.' : 'A new door opens every day in December.'}</span></span>
+</a>
+{#if g.mine}<p class="small"><a href="/groups/{g.id}/advent/setup">Set up the doors</a></p>{/if}
+
 <div class="Subhead Subhead--spaced"><h2>Share the group page</h2></div>
 <p class="note">Anyone with this link sees everyone's name and picture, and the lists they're sharing right now. Each list's own PIN still applies.</p>
 <div class="link">
@@ -118,6 +124,47 @@
 {/if}
 
 <style>
+	.advent {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		margin: 6px 0 6px;
+		padding: 14px;
+		border-radius: 16px;
+		background: #e2574c;
+		color: #fff;
+		text-decoration: none;
+		box-shadow: 0 10px 24px -12px rgba(59, 42, 37, 0.6);
+	}
+	.advent:hover {
+		text-decoration: none;
+		filter: brightness(1.05);
+	}
+	.advent strong {
+		display: block;
+		font: 400 24px/1.1 'Anton', Impact, sans-serif;
+	}
+	.doors {
+		display: grid;
+		flex: none;
+		grid-template-columns: repeat(2, 24px);
+		gap: 4px;
+	}
+	.doors span {
+		display: grid;
+		place-items: center;
+		height: 24px;
+		border-radius: 6px;
+		background: #fffdf9;
+		color: #3b2a25;
+		font: 400 12px 'Anton', Impact, sans-serif;
+	}
+	.doors span:nth-child(2) {
+		background: #f5c451;
+	}
+	.doors span:nth-child(3) {
+		background: #d6ead9;
+	}
 	.link {
 		display: flex;
 		gap: 8px;

@@ -1,4 +1,5 @@
 import { ensureSchema } from '$lib/server/db.js';
+import { useFakeToday } from '$lib/server/advent.js';
 import { SESSION_COOKIE, validateSession, sessionCookie } from '$lib/server/auth.js';
 
 export async function handle({ event, resolve }) {
@@ -6,6 +7,7 @@ export async function handle({ event, resolve }) {
 	const env = event.platform.env;
 	event.locals.env = env;
 	await ensureSchema(env);
+	useFakeToday(env);
 
 	const token = event.cookies.get(SESSION_COOKIE);
 	const user = await validateSession(env, token);

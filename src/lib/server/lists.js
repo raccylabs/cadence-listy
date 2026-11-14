@@ -117,8 +117,15 @@ export async function deleteList(env, list) {
 
 export async function deleteUser(env, user) {
 	for (const list of await all(env, 'SELECT id, banner_key FROM lists WHERE user_id = ?', user.id)) await deleteList(env, list);
+	// Advent pictures in groups they made, and on doors made just for them.
+	const advent = await all(
+		env,
+		`SELECT image_key FROM advent_doors WHERE image_key IS NOT NULL
+		 AND (member_id = ?1 OR group_id IN (SELECT id FROM family_groups WHERE owner_id = ?1))`,
+		user.id
+	);
 	await run(env, 'DELETE FROM users WHERE id = ?', user.id);
-	await dropImages(env, [user.avatar_key]);
+	await dropImages(env, [user.avatar_key, ...advent.map((r) => r.image_key)]);
 }
 
 /** Delete every list whose week after the big day is over, in its owner's time zone. */

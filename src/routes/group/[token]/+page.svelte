@@ -41,7 +41,7 @@
 	{:else}
 		<Decor edition={edition.id} options={decor} part="fall" />
 		<main class="wrap">
-			{#if data.member}<p class="preview">This is the page people see. <a href="/groups/{data.manageId}">Group settings</a></p>{/if}
+			{#if data.member}<p class="preview">This is the page people see. <a href="/groups/{data.manageId}">Group settings</a> · <a href="/groups/{data.manageId}/advent">🎄 Open your advent calendar</a></p>{/if}
 			<header class="banner">
 				<div class="words">
 					<h1>{group.name}</h1>

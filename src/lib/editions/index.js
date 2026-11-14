@@ -25,7 +25,6 @@ export const EDITIONS = {
 		widgets: [
 			{ id: 'countdown', label: 'Days until Christmas', on: true },
 			{ id: 'spotlight', label: 'Show top picks first', on: true },
-			{ id: 'advent', label: 'Advent calendar', on: false }
 		]
 	},
 	birthday: {
