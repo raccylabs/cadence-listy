@@ -24,6 +24,12 @@
 {#if form?.error}<div class="flash flash-error mb-3" role="alert">{form.error}</div>{/if}
 <form method="POST" action="?/invite" use:enhance class="line">
 	<input class="form-control" name="name" maxlength="60" placeholder="Who is it for?" aria-label="Who is this invite for?" required />
+	{#if data.groups.length}
+		<select class="form-control group" name="group" aria-label="Add them to a group">
+			<option value="">No group</option>
+			{#each data.groups as g (g.id)}<option value={g.id}>Also join {g.name}</option>{/each}
+		</select>
+	{/if}
 	<button class="btn btn-primary">Create invite link</button>
 </form>
 
@@ -31,7 +37,7 @@
 	<div class="Subhead Subhead--spaced"><h2>Waiting to join</h2></div>
 	{#each data.invites as i (i.token)}
 		<div class="row">
-			<strong class="name">{i.name}</strong>
+			<strong class="name">{i.name}{#if i.group_name}<span class="small muted"> joins {i.group_name}</span>{/if}</strong>
 			<input class="form-control url" readonly value={link(i.token)} aria-label="Invite link for {i.name}" onfocus={(e) => e.currentTarget.select()} />
 			<button type="button" class="btn btn-sm" onclick={() => copy(i.token)}>{copied === i.token ? 'Copied' : 'Copy link'}</button>
 			<form method="POST" action="?/cancel" use:enhance>

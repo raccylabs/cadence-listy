@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { EDITIONS } from '$lib/editions/index.js';
 	import ItemForm from '../ItemForm.svelte';
+	import Scene from '$lib/editions/Scene.svelte';
 
 	let { data, form } = $props();
 	const list = $derived(data.list);
@@ -90,7 +91,7 @@
 </div>
 
 <div class="Subhead Subhead--spaced"><h2>Items</h2></div>
-<ItemForm tiers={edition.tiers} listId={list.id} />
+<ItemForm tiers={edition.tiers} listId={list.id} edition={edition.id} />
 {#each edition.tiers as tier, t}
 	{@const items = shown.filter((i) => i.tier === t + 1)}
 	{#if items.length}
@@ -110,12 +111,12 @@
 						onkeydown={(e) => keyMove(e, item, items)}
 					>⠿</button>
 					{#if item.has_photo}<img src="/share/{list.share_token}/photo/{item.id}?v={item.photo_v}" alt="" />{/if}
-					<span class="name"><strong>{item.title}</strong>{#if item.featured} <span class="small muted">Top pick</span>{/if}<span class="small muted">{[item.price, item.store].filter(Boolean).join(', ')}</span></span>
+					<span class="name"><strong>{item.title}</strong>{#if item.featured} <span class="tag">{item.pick_text || 'Top pick'}</span>{/if}<span class="small muted">{[item.price, item.store].filter(Boolean).join(', ')}</span></span>
 					<button type="button" class="btn btn-sm" onclick={() => (editing = editing === item.id ? 0 : item.id)}>{editing === item.id ? 'Close' : 'Edit'}</button>
 					<form method="POST" action="?/deleteItem" use:enhance={stay}><input type="hidden" name="id" value={item.id} /><button class="btn btn-sm btn-danger">Delete</button></form>
 				</div>
 				{#if editing === item.id}
-					<div class="edit"><ItemForm tiers={edition.tiers} listId={list.id} {item} onsaved={() => (editing = 0)} /></div>
+					<div class="edit"><ItemForm tiers={edition.tiers} listId={list.id} edition={edition.id} {item} onsaved={() => (editing = 0)} /></div>
 				{/if}
 			</div>
 		{/each}
@@ -151,6 +152,18 @@
 			<input id="date" class="form-control" type="date" name="event_date" required value={list.event_date} />
 			<p class="note">The link closes after this day. This list and its photos are deleted for good after {data.keepUntil}.</p>
 		</div>
+		<fieldset>
+			<legend>Picture at the top</legend>
+			<div class="scenes">
+				{#each edition.scenes as [id, name] (id)}
+					<label class="scene-pick">
+						<input type="radio" name="scene" value={id} checked={list.options.scene === id} />
+						<span class="thumb edition ed-root" data-edition={edition.id}><Scene edition={edition.id} scene={id} /></span>
+						<span class="small">{name}</span>
+					</label>
+				{/each}
+			</div>
+		</fieldset>
 		<fieldset>
 			<legend>Decorations</legend>
 			{#each edition.decor as d (d.id)}
@@ -277,6 +290,50 @@
 		gap: 6px;
 		margin-bottom: 4px;
 		font-weight: 400;
+	}
+	.tag {
+		align-self: flex-start;
+		margin: 2px 0;
+		padding: 1px 8px;
+		border-radius: 999px;
+		background: #e2574c;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 700;
+	}
+	.scenes {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+		gap: 8px;
+	}
+	.scene-pick {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin: 0;
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.scene-pick input {
+		position: absolute;
+		opacity: 0;
+	}
+	.thumb {
+		display: block;
+		height: 80px;
+		overflow: hidden;
+		border: 2px solid transparent;
+		border-radius: 12px;
+		background: #fffdf9;
+		box-shadow: 0 0 0 1px var(--border);
+	}
+	.scene-pick input:checked + .thumb {
+		border-color: #3b2a25;
+	}
+	.scene-pick input:focus-visible + .thumb {
+		outline: 2px solid #5b9bd5;
+		outline-offset: 2px;
 	}
 	.mode {
 		width: 140px;

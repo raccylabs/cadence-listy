@@ -5,7 +5,7 @@ import { getUserById, sha256, sameText, randomToken, oldSignIns } from './auth.j
 import { ValidationError } from './errors.js';
 import { sniffImage, putImage, dropImages } from './images.js';
 import { downloadImage } from './lookup.js';
-import { EDITIONS } from '../editions/index.js';
+import { EDITIONS, sceneFor, PICK_COLORS, PICK_PATTERNS, PICK_TEXT } from '../editions/index.js';
 
 const bad = (msg) => {
 	throw new ValidationError(msg);
@@ -50,7 +50,8 @@ export function readOptions(list) {
 	const pick = (o) => [o.id, typeof saved[o.id] === 'boolean' ? saved[o.id] : o.on];
 	return {
 		...Object.fromEntries([...ed.decor, ...ed.widgets].map(pick)),
-		lightsMode: ['twinkle', 'chase', 'steady'].includes(saved.lightsMode) ? saved.lightsMode : 'twinkle'
+		lightsMode: ['twinkle', 'chase', 'steady'].includes(saved.lightsMode) ? saved.lightsMode : 'twinkle',
+		scene: sceneFor(list.edition, saved.scene)
 	};
 }
 
@@ -95,6 +96,7 @@ export async function updateList(env, user, list, input) {
 	if (event_date !== list.event_date && event_date < today(user)) bad('Pick today or a later date.');
 	const options = Object.fromEntries([...ed.decor, ...ed.widgets].map((o) => [o.id, input[o.id] === 'on']));
 	options.lightsMode = str(input.lightsMode, 10) || 'twinkle';
+	options.scene = sceneFor(list.edition, str(input.scene, 20));
 	await run(
 		env,
 		'UPDATE lists SET title = ?, message = ?, event_date = ?, options = ?, share_on = ? WHERE id = ?',
@@ -116,6 +118,7 @@ export async function deleteList(env, list) {
 export async function deleteUser(env, user) {
 	for (const list of await all(env, 'SELECT id, banner_key FROM lists WHERE user_id = ?', user.id)) await deleteList(env, list);
 	await run(env, 'DELETE FROM users WHERE id = ?', user.id);
+	await dropImages(env, [user.avatar_key]);
 }
 
 /** Delete every list whose week after the big day is over, in its owner's time zone. */
@@ -146,7 +149,7 @@ export const newLink = (env, list) => run(env, 'UPDATE lists SET share_token = ?
 
 // A short PIN can't be made slow enough to matter here. It's protected by the secret link and
 // the attempt limit; the salt just keeps equal PINs from looking equal.
-const hashPin = async (pin, salt) => `${salt}$${await sha256(`${salt}:${pin}`)}`;
+export const hashPin = async (pin, salt) => `${salt}$${await sha256(`${salt}:${pin}`)}`;
 
 export async function setPin(env, list, pin) {
 	if (!/^\d{4,8}$/.test(pin)) bad('Use 4 to 8 digits for the PIN.');
@@ -217,22 +220,33 @@ function itemFields(list, f) {
 		price: str(f.get('price'), 24),
 		store: str(f.get('store'), 80),
 		details: str(f.get('details'), MAX_DETAILS),
-		featured: f.get('featured') === 'on' ? 1 : 0
+		featured: f.get('featured') === 'on' ? 1 : 0,
+		...pickFields(f)
 	};
 }
 
-const clearFeatured = (env, list) => run(env, 'UPDATE list_items SET featured = 0 WHERE list_id = ?', list.id);
+/** The top-pick banner. Blank means the default, so later changes to the defaults reach old items. */
+function pickFields(f) {
+	const text = str(f.get('pick_text'), 18);
+	const color = str(f.get('pick_color'), 10);
+	const pattern = str(f.get('pick_pattern'), 10);
+	return {
+		pick_text: text === PICK_TEXT ? '' : text,
+		pick_color: PICK_COLORS.some(([id]) => id === color) ? color : '',
+		pick_pattern: PICK_PATTERNS.some(([id]) => id === pattern) ? pattern : ''
+	};
+}
 
 export async function addItem(env, list, f) {
 	if ((await one(env, 'SELECT COUNT(*) AS n FROM list_items WHERE list_id = ?', list.id)).n >= MAX_ITEMS) bad('This list is full.');
 	const x = itemFields(list, f);
 	const { photo, photoFailed } = await itemPhoto(env, list, f);
-	if (x.featured) await clearFeatured(env, list);
 	await run(
 		env,
-		`INSERT INTO list_items (list_id, tier, title, url, price, store, details, featured, photo_key, photo_size, photo_v, position)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM list_items WHERE list_id = ?))`,
-		list.id, x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, photo?.key ?? null, photo?.size ?? 0, photo ? 1 : 0, list.id
+		`INSERT INTO list_items (list_id, tier, title, url, price, store, details, featured, pick_text, pick_color, pick_pattern, photo_key, photo_size, photo_v, position)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM list_items WHERE list_id = ?))`,
+		list.id, x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, x.pick_text, x.pick_color, x.pick_pattern,
+		photo?.key ?? null, photo?.size ?? 0, photo ? 1 : 0, list.id
 	);
 	return { photoFailed };
 }
@@ -243,11 +257,10 @@ export async function updateItem(env, list, f) {
 	if (!item) bad('That item is gone.');
 	const x = itemFields(list, f);
 	const { photo, photoFailed } = await itemPhoto(env, list, f);
-	if (x.featured) await clearFeatured(env, list);
 	await run(
 		env,
-		'UPDATE list_items SET tier = ?, title = ?, url = ?, price = ?, store = ?, details = ?, featured = ? WHERE id = ?',
-		x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, id
+		'UPDATE list_items SET tier = ?, title = ?, url = ?, price = ?, store = ?, details = ?, featured = ?, pick_text = ?, pick_color = ?, pick_pattern = ? WHERE id = ?',
+		x.tier, x.title, x.url, x.price, x.store, x.details, x.featured, x.pick_text, x.pick_color, x.pick_pattern, id
 	);
 	if (photo || f.get('remove_photo') === 'on') {
 		await run(env, 'UPDATE list_items SET photo_key = ?, photo_size = ?, photo_v = photo_v + 1 WHERE id = ?', photo?.key ?? null, photo?.size ?? 0, id);
@@ -283,7 +296,7 @@ export const listNotes = (env, list) =>
 export const listItems = (env, list) =>
 	all(
 		env,
-		'SELECT id, tier, title, url, price, store, details, featured, photo_v, photo_key IS NOT NULL AS has_photo FROM list_items WHERE list_id = ? ORDER BY tier, position, id',
+		'SELECT id, tier, title, url, price, store, details, featured, pick_text, pick_color, pick_pattern, photo_v, photo_key IS NOT NULL AS has_photo FROM list_items WHERE list_id = ? ORDER BY tier, position, id',
 		list.id
 	);
 
@@ -331,8 +344,9 @@ export async function publicList(env, list, now) {
 		days: daysUntil(list.event_date, now),
 		now,
 		options: readOptions(list),
-		items: (await listItems(env, list)).map(({ id, tier, title, url, price, store, details, featured, photo_v, has_photo }) => ({
-			id, tier, title, url, price, store, details, featured: !!featured, photo: has_photo ? photo_v : 0
+		items: (await listItems(env, list)).map(({ id, tier, title, url, price, store, details, featured, pick_text, pick_color, pick_pattern, photo_v, has_photo }) => ({
+			id, tier, title, url, price, store, details, featured: !!featured, photo: has_photo ? photo_v : 0,
+			pick: featured ? { text: pick_text, color: pick_color, pattern: pick_pattern } : null
 		}))
 	};
 }

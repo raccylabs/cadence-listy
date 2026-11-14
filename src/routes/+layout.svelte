@@ -2,12 +2,13 @@
 	import '@fontsource-variable/inter-tight/index.css';
 	import '@fontsource/anton/400.css';
 	import '../app.css';
+	import '$lib/editions/themes.css';
 	import { page } from '$app/state';
 
 	let { data, children } = $props();
 </script>
 
-{#if page.route.id?.startsWith('/share')}
+{#if page.route.id?.startsWith('/share') || page.route.id?.startsWith('/group/')}
 	{@render children()}
 {:else}
 	<header>
@@ -16,6 +17,7 @@
 			{#if data.me}
 				<nav>
 					<a href="/">My lists</a>
+					<a href="/groups">Groups</a>
 					{#if data.me.admin}<a href="/people">People</a>{/if}
 					<a href="/account">Account</a>
 					<form method="POST" action="/logout"><button>Sign out</button></form>

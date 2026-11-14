@@ -2,12 +2,28 @@ import { fail, redirect } from '@sveltejs/kit';
 import { requireUser } from '$lib/server/guard.js';
 import { checkPassword, setPassword, SESSION_COOKIE, sessionCookie } from '$lib/server/auth.js';
 import { deleteUser } from '$lib/server/lists.js';
+import { saveProfile } from '$lib/server/profile.js';
+import { ValidationError } from '$lib/server/errors.js';
 
 export function load({ locals, url }) {
-	return { username: requireUser(locals, url).username };
+	const user = requireUser(locals, url);
+	return {
+		username: user.username,
+		profile: { display_name: user.display_name, avatar: user.avatar, photo: user.avatar_key ? user.avatar_v : 0 }
+	};
 }
 
 export const actions = {
+	profile: async ({ locals, url, request }) => {
+		const user = requireUser(locals, url);
+		try {
+			await saveProfile(locals.env, user, await request.formData());
+		} catch (e) {
+			if (e instanceof ValidationError) return fail(400, { profileError: e.message });
+			throw e;
+		}
+		return { profileSaved: true };
+	},
 	password: async ({ locals, url, request }) => {
 		const user = requireUser(locals, url);
 		const f = await request.formData();

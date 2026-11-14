@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { requireUser, guarded, readForm } from '$lib/server/guard.js';
+import { myGroups } from '$lib/server/groups.js';
 import { allPeople, allLists, pendingInvites, createInvite, cancelInvite, removePerson } from '$lib/server/people.js';
 
 function admin({ locals, url }) {
@@ -9,15 +10,16 @@ function admin({ locals, url }) {
 }
 
 export async function load(event) {
-	admin(event);
+	const me = admin(event);
 	const env = event.locals.env;
-	return { people: await allPeople(env), lists: await allLists(env), invites: await pendingInvites(env), origin: event.url.origin };
+	return { people: await allPeople(env), lists: await allLists(env), invites: await pendingInvites(env), groups: await myGroups(env, me), origin: event.url.origin };
 }
 
 export const actions = {
 	invite: guarded(async (event) => {
-		admin(event);
-		await createInvite(event.locals.env, (await readForm(event.request)).name);
+		const me = admin(event);
+		const f = await readForm(event.request);
+		await createInvite(event.locals.env, me, f.name, f.group);
 		return { invited: true };
 	}),
 	cancel: guarded(async (event) => {

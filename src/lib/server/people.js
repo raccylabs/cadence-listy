@@ -4,19 +4,26 @@ import { randomToken, getUserById } from './auth.js';
 import { ValidationError } from './errors.js';
 import { deleteUser, today, keepUntil } from './lists.js';
 
-export const openInvite = (env, token) => (token ? one(env, 'SELECT token FROM invites WHERE token = ? AND used_at IS NULL', token) : null);
+export const openInvite = (env, token) => (token ? one(env, 'SELECT token, group_id FROM invites WHERE token = ? AND used_at IS NULL', token) : null);
 
 export const useInvite = (env, invite, userId) =>
 	run(env, "UPDATE invites SET used_by = ?, used_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE token = ?", userId, invite.token);
 
-export async function createInvite(env, name) {
+/** A one-use sign-up link. With a group, the new person joins it when they sign up. */
+export async function createInvite(env, admin, name, groupId) {
 	const label = String(name ?? '').trim().slice(0, 60);
 	if (!label) throw new ValidationError('Enter who this invite is for.');
-	await run(env, 'INSERT INTO invites (token, name) VALUES (?, ?)', randomToken(18), label);
+	const group = Number(groupId) ? await one(env, 'SELECT group_id FROM family_members WHERE group_id = ? AND user_id = ?', Number(groupId), admin.id) : null;
+	await run(env, 'INSERT INTO invites (token, name, group_id) VALUES (?, ?, ?)', randomToken(18), label, group?.group_id ?? null);
 }
 
 export const cancelInvite = (env, token) => run(env, 'DELETE FROM invites WHERE token = ? AND used_at IS NULL', String(token));
-export const pendingInvites = (env) => all(env, 'SELECT token, name, created_at FROM invites WHERE used_at IS NULL ORDER BY created_at DESC');
+export const pendingInvites = (env) =>
+	all(
+		env,
+		`SELECT i.token, i.name, i.created_at, g.name AS group_name FROM invites i LEFT JOIN family_groups g ON g.id = i.group_id
+		 WHERE i.used_at IS NULL ORDER BY i.created_at DESC`
+	);
 
 export const allPeople = (env) =>
 	all(

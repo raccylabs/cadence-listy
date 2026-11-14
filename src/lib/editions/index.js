@@ -16,6 +16,7 @@ export const EDITIONS = {
 		tiers: ['Top of the list', 'Would love', 'Stocking stuffers'],
 		spots: ['gift', 'stocking', 'cane', 'mug', 'tree', 'snowman'],
 		countdownSpot: 'tree',
+		scenes: [['ornaments', 'Ornaments'], ['snowman', 'Snowman'], ['gingerbread', 'Gingerbread man'], ['tree', 'Christmas tree']],
 		decor: [
 			{ id: 'lights', label: 'Christmas lights', on: true, modes: [['twinkle', 'Twinkle'], ['chase', 'Chase'], ['steady', 'Steady']] },
 			{ id: 'snow', label: 'Falling snow', on: true },
@@ -23,7 +24,7 @@ export const EDITIONS = {
 		],
 		widgets: [
 			{ id: 'countdown', label: 'Days until Christmas', on: true },
-			{ id: 'spotlight', label: 'Show my top pick first', on: true },
+			{ id: 'spotlight', label: 'Show top picks first', on: true },
 			{ id: 'advent', label: 'Advent calendar', on: false }
 		]
 	},
@@ -38,6 +39,7 @@ export const EDITIONS = {
 		tiers: ['Top of the list', 'Would love', 'Little extras'],
 		spots: ['gift', 'cake', 'balloon', 'hat'],
 		countdownSpot: 'cake',
+		scenes: [['balloons', 'Balloons'], ['cake', 'Birthday cake'], ['present', 'Present']],
 		decor: [
 			{ id: 'bunting', label: 'String of pennants', on: true },
 			{ id: 'confetti', label: 'Falling confetti', on: true },
@@ -45,9 +47,35 @@ export const EDITIONS = {
 		],
 		widgets: [
 			{ id: 'countdown', label: 'Days until the big day', on: true },
-			{ id: 'spotlight', label: 'Show my top pick first', on: true }
+			{ id: 'spotlight', label: 'Show top picks first', on: true }
 		]
 	}
 };
 
 export const EDITION_LIST = Object.values(EDITIONS);
+
+/** The header drawing to use: the saved one if this edition has it, otherwise its first. */
+export const sceneFor = (edition, saved) => {
+	const scenes = EDITIONS[edition]?.scenes ?? [];
+	return scenes.some(([id]) => id === saved) ? saved : scenes[0]?.[0];
+};
+
+// Top-pick banners. Each item can pick its own words, color and pattern.
+export const PICK_COLORS = [
+	['red', 'Red', '#e2574c'],
+	['green', 'Green', '#4f9f7d'],
+	['gold', 'Gold', '#f5c451'],
+	['pink', 'Pink', '#ef8fb0'],
+	['purple', 'Purple', '#9b7fd1'],
+	['blue', 'Blue', '#5b9bd5'],
+	['cocoa', 'Cocoa', '#3b2a25']
+];
+export const PICK_PATTERNS = [
+	['plain', 'Plain'],
+	['stripes', 'Candy stripes'],
+	['dots', 'Polka dots'],
+	['sprinkles', 'Sprinkles'],
+	['stars', 'Stars']
+];
+export const PICK_TEXT = 'Top pick';
+

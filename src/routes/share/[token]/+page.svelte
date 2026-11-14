@@ -7,6 +7,7 @@
 	import Advent from '$lib/editions/Advent.svelte';
 	import Scene from '$lib/editions/Scene.svelte';
 	import Spot from '$lib/editions/Spot.svelte';
+	import Ribbon from '$lib/editions/Ribbon.svelte';
 
 	let { data, form } = $props();
 
@@ -19,7 +20,7 @@
 	const board = $derived.by(() => {
 		if (!list) return [];
 		const items = list.items.filter((x) => !shown || x.tier === shown);
-		// The top pick leads the board.
+		// Top picks lead the board.
 		return options.spotlight ? [...items].sort((a, b) => Number(b.featured) - Number(a.featured)) : items;
 	});
 	// One pop-up shows an item's details or takes a note about it.
@@ -32,6 +33,8 @@
 		form = null;
 		if (!box.open) box.showModal();
 	};
+	// Lists opened from a family page link back to it.
+	const groupBack = $derived(/^[\w-]{10,40}$/.test(page.url.searchParams.get('from') ?? '') ? page.url.searchParams.get('from') : '');
 	const photo = (item) => `/share/${page.params.token}/photo/${item.id}?v=${item.photo}`;
 </script>
 
@@ -81,6 +84,7 @@
 			{#if data.isOwner}
 				<p class="preview">This is how your list looks to visitors. <a href="/lists/{data.ownerListId}">Back to editing</a></p>
 			{/if}
+			{#if groupBack}<p class="back"><a href="/group/{groupBack}">← Back to everyone's lists</a></p>{/if}
 			<header class="banner">
 				<div class="words">
 					<h1>{list.title}</h1>
@@ -100,7 +104,7 @@
 					{/if}
 				</div>
 				<div class="art">
-					<Scene edition={edition.id} />
+					<Scene edition={edition.id} scene={options.scene} />
 					<Decor edition={edition.id} {options} part="string" />
 				</div>
 			</header>
@@ -120,7 +124,7 @@
 					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 					<article
 						class="product"
-						class:top={item.featured && options.spotlight}
+						class:top={item.featured}
 						style="--n:{Math.min(i, 8)}"
 						onclick={(e) => !e.target.closest('a, button') && openBox(item, 'details')}
 					>
@@ -130,8 +134,8 @@
 							{:else}
 								<div class="blank"><Spot name={edition.spots[item.id % edition.spots.length]} /></div>
 							{/if}
-							{#if item.featured && options.spotlight}<p class="badge">Top pick</p>{/if}
 						</div>
+						{#if item.featured}<Ribbon pick={item.pick} edition={edition.id} />{/if}
 						<div class="text">
 							<h2><button type="button" class="open" onclick={() => openBox(item, 'details')}>{item.title}</button></h2>
 							{#if item.price}<p class="price">{item.price}</p>{/if}
@@ -217,6 +221,13 @@
 		margin: 0 auto;
 		padding: 20px 24px 40px;
 	}
+	.back {
+		margin: 0 0 10px;
+		font: 700 15px var(--ed-body);
+	}
+	.back a {
+		color: var(--ed-ink);
+	}
 	.preview {
 		margin-bottom: 12px;
 		font: 400 13px var(--ed-body);
@@ -301,6 +312,7 @@
 		margin-top: 12px;
 	}
 	.product {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -427,16 +439,6 @@
 		flex-direction: column;
 		min-width: 0;
 		padding: 14px;
-	}
-	.badge {
-		position: absolute;
-		top: 8px;
-		left: 8px;
-		padding: 2px 8px;
-		border-radius: 999px;
-		background: var(--ed-ink);
-		color: #fff;
-		font: 700 12px var(--ed-body);
 	}
 	.product h2 {
 		display: -webkit-box;
@@ -758,6 +760,7 @@
 		.stripes,
 		.pills,
 		.preview,
+		.back,
 		.panel,
 		.export,
 		.foot,

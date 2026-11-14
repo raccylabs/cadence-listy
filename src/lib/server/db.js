@@ -86,6 +86,36 @@ const MIGRATIONS = [
 	[
 		`UPDATE lists SET options = json_set(CASE WHEN json_valid(options) THEN options ELSE '{}' END, '$.snow', json('true')) WHERE edition = 'christmas'`,
 		`UPDATE lists SET options = json_set(CASE WHEN json_valid(options) THEN options ELSE '{}' END, '$.confetti', json('true')) WHERE edition = 'birthday'`
+	],
+	// Families and groups, profile pictures, and top-pick banners.
+	[
+		`ALTER TABLE users ADD COLUMN display_name TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE users ADD COLUMN avatar TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE users ADD COLUMN avatar_key TEXT`,
+		`ALTER TABLE users ADD COLUMN avatar_size INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN avatar_v INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE list_items ADD COLUMN pick_text TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE list_items ADD COLUMN pick_color TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE list_items ADD COLUMN pick_pattern TEXT NOT NULL DEFAULT ''`,
+		`CREATE TABLE family_groups (
+			id          INTEGER PRIMARY KEY,
+			owner_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			name        TEXT NOT NULL,
+			edition     TEXT NOT NULL DEFAULT 'christmas',
+			scene       TEXT NOT NULL DEFAULT '',
+			share_token TEXT NOT NULL UNIQUE,
+			join_token  TEXT NOT NULL UNIQUE,
+			pin_hash    TEXT,
+			created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+		)`,
+		`CREATE TABLE family_members (
+			group_id  INTEGER NOT NULL REFERENCES family_groups(id) ON DELETE CASCADE,
+			user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			joined_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+			PRIMARY KEY (group_id, user_id)
+		)`,
+		`CREATE INDEX family_members_user ON family_members(user_id)`,
+		`ALTER TABLE invites ADD COLUMN group_id INTEGER REFERENCES family_groups(id) ON DELETE SET NULL`
 	]
 ];
 

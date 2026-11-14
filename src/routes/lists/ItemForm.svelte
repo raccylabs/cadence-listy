@@ -1,9 +1,13 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { shrinkPhoto } from '$lib/photo.js';
+	import { PICK_COLORS, PICK_PATTERNS, PICK_TEXT } from '$lib/editions/index.js';
+	import Ribbon from '$lib/editions/Ribbon.svelte';
 
 	/** Add a new item, or edit one when `item` is given. */
-	let { tiers, listId, item = null, prefill = null, onsaved = () => {} } = $props();
+	let { tiers, listId, edition = 'christmas', item = null, prefill = null, onsaved = () => {} } = $props();
+	const startPick = () => ({ on: !!item?.featured, text: item?.pick_text || PICK_TEXT, color: item?.pick_color ?? '', pattern: item?.pick_pattern ?? '' });
+	let pick = $state(startPick());
 	const blank = () => ({
 		title: item?.title ?? '',
 		url: item?.url ?? '',
@@ -90,6 +94,7 @@
 			if (!item) {
 				f = blank();
 				formElement.reset();
+				pick = startPick();
 				pasted = '';
 			}
 			onsaved();
@@ -154,7 +159,35 @@
 		<label for="{key}-details">Description, size, color</label>
 		<textarea id="{key}-details" class="form-control" name="details" rows="3" maxlength="1500" bind:value={f.details}></textarea>
 	</div>
-	<label class="check wide"><input type="checkbox" name="featured" checked={!!item?.featured} /> Make this my top pick</label>
+	<label class="check wide"><input type="checkbox" name="featured" bind:checked={pick.on} /> Top pick</label>
+	{#if pick.on}
+		<fieldset class="wide banner-set">
+			<legend>Top pick banner</legend>
+			<div class="banner-row">
+				<div class="preview edition ed-root" data-edition={edition}>
+					<Ribbon pick={pick} {edition} />
+				</div>
+				<div class="banner-fields">
+					<label for="{key}-pick-text">Words</label>
+					<input id="{key}-pick-text" class="form-control" name="pick_text" maxlength="18" bind:value={pick.text} placeholder={PICK_TEXT} />
+					<p class="small-label">Color</p>
+					<div class="swatches">
+						<label class="swatch" title="Theme color"><input type="radio" name="pick_color" value="" bind:group={pick.color} /><span class="theme">Auto</span></label>
+						{#each PICK_COLORS as [id, name, hex]}
+							<label class="swatch" title={name}><input type="radio" name="pick_color" value={id} bind:group={pick.color} /><span style="background:{hex}"><span class="sr">{name}</span></span></label>
+						{/each}
+					</div>
+					<p class="small-label">Pattern</p>
+					<div class="patterns">
+						<label class="pat"><input type="radio" name="pick_pattern" value="" bind:group={pick.pattern} /><span>Auto</span></label>
+						{#each PICK_PATTERNS as [id, name]}
+							<label class="pat"><input type="radio" name="pick_pattern" value={id} bind:group={pick.pattern} /><span>{name}</span></label>
+						{/each}
+					</div>
+				</div>
+			</div>
+		</fieldset>
+	{/if}
 	{#if error}<div class="flash flash-error wide">{error}</div>{/if}
 	{#if warning}<div class="flash flash-error wide">{warning}</div>{/if}
 	<div class="wide"><button class="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : item ? 'Save item' : 'Add to list'}</button></div>
@@ -182,6 +215,105 @@
 		margin: 6px 0 0;
 		font-weight: 400;
 	}
+	.banner-set {
+		margin: 0;
+		padding: 12px;
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		background: #fffaf2;
+	}
+	.banner-set legend {
+		padding: 0 4px;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.banner-row {
+		display: flex;
+		gap: 16px;
+		align-items: flex-start;
+	}
+	.preview {
+		position: relative;
+		flex: none;
+		width: 150px;
+		height: 150px;
+		border-radius: 18px;
+		background: #fffdf9;
+		box-shadow: inset 0 0 0 10px #f3ebe0;
+		--rib-at: 2px;
+	}
+	.banner-fields {
+		flex: 1;
+		min-width: 0;
+	}
+	.small-label {
+		margin: 10px 0 4px;
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.swatches,
+	.patterns {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.swatch,
+	.pat {
+		position: relative;
+		margin: 0;
+		cursor: pointer;
+	}
+	.swatch input,
+	.pat input {
+		position: absolute;
+		opacity: 0;
+	}
+	.swatch > span {
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border: 2px solid #fff;
+		border-radius: 50%;
+		box-shadow: 0 0 0 1px var(--border);
+	}
+	.swatch .theme {
+		width: auto;
+		padding: 0 8px;
+		border-radius: 999px;
+		background: #fff;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.pat span {
+		display: block;
+		padding: 4px 10px;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: #fff;
+		font-size: 13px;
+		font-weight: 500;
+	}
+	.swatch input:checked + span {
+		box-shadow: 0 0 0 3px #3b2a25;
+	}
+	.pat input:checked + span {
+		border-color: #3b2a25;
+		background: #3b2a25;
+		color: #fff;
+	}
+	.swatch input:focus-visible + span,
+	.pat input:focus-visible + span {
+		outline: 2px solid #5b9bd5;
+		outline-offset: 2px;
+	}
+	.sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+	}
 	.linkline {
 		display: flex;
 		gap: 8px;
@@ -208,6 +340,9 @@
 	@media (max-width: 560px) {
 		.grid {
 			grid-template-columns: minmax(0, 1fr);
+		}
+		.banner-row {
+			flex-direction: column;
 		}
 	}
 </style>

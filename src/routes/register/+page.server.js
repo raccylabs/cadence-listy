@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { createUser, createSession, SESSION_COOKIE, sessionCookie, rateLimited, sameText } from '$lib/server/auth.js';
 import { ValidationError } from '$lib/server/errors.js';
 import { openInvite, useInvite } from '$lib/server/people.js';
+import { joinGroup } from '$lib/server/groups.js';
 
 export async function load({ locals, url }) {
 	if (locals.user) redirect(303, '/');
@@ -25,7 +26,10 @@ export const actions = {
 			if (e instanceof ValidationError) return fail(400, { username, error: e.message });
 			throw e;
 		}
-		if (invite) await useInvite(env, invite, id);
+		if (invite) {
+			await useInvite(env, invite, id);
+			if (invite.group_id) await joinGroup(env, { id }, { id: invite.group_id }).catch(() => {});
+		}
 		const { token, expires } = await createSession(env, id);
 		cookies.set(SESSION_COOKIE, token, sessionCookie(url, expires));
 		redirect(303, '/');
