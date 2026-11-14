@@ -1,6 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidateAll, replaceState } from '$app/navigation';
+	import { page } from '$app/state';
+	import Spot from '$lib/editions/Spot.svelte';
 	import { EDITIONS } from '$lib/editions/index.js';
 	import ItemForm from '../ItemForm.svelte';
 	import Scene from '$lib/editions/Scene.svelte';
@@ -66,21 +68,66 @@
 	}
 	const state = $derived(!list.share_on ? 'Sharing is off. The link shows nothing.' : data.closesIn < 0 ? `Closed after ${list.event_date}. Set a later date to reopen it.` : data.closesIn === 0 ? 'The link closes after today.' : `The link closes after ${list.event_date}.`);
 	const stay = () => ({ update }) => update({ reset: false });
+
+	// Adding wishes is the main job, so it's the first tab; everything else sits behind its own tab.
+	const TABS = [
+		['wishes', 'Wishes'],
+		['notes', 'Notes'],
+		['sharing', 'Sharing'],
+		['settings', 'Settings']
+	];
+	let tab = $state(TABS.some(([id]) => id === page.url.searchParams.get('tab')) ? page.url.searchParams.get('tab') : 'wishes');
+	function pick(id) {
+		tab = id;
+		const url = new URL(page.url);
+		if (id === 'wishes') url.searchParams.delete('tab');
+		else url.searchParams.set('tab', id);
+		replaceState(url, {});
+	}
+	function tabKeys(e, i) {
+		const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+		if (!step) return;
+		e.preventDefault();
+		const next = TABS[(i + step + TABS.length) % TABS.length][0];
+		pick(next);
+		document.getElementById(`tab-${next}`)?.focus();
+	}
+	const count = (id) => (id === 'wishes' ? data.items.length : id === 'notes' ? data.notes.length : 0);
 </script>
 
 <svelte:head><title>{list.title} · Cadence Listy</title></svelte:head>
 
 <p class="small"><a href="/">My lists</a></p>
-<div class="Subhead"><h2>{list.title}</h2></div>
+<header class="top">
+	<h1>{list.title}</h1>
+	<div class="link">
+		<input class="form-control" readonly value={data.shareUrl} aria-label="Share link" onfocus={(e) => e.currentTarget.select()} />
+		<button class="btn" type="button" onclick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
+		<a class="btn" href="/share/{list.share_token}" target="_blank" rel="noopener">View list</a>
+	</div>
+	<p class="note">{state}</p>
+</header>
 {#if form?.error && !form?.added}<div class="flash flash-error mb-3">{form.error}</div>{/if}
 
-<div class="Subhead Subhead--spaced"><h2>Share</h2></div>
-<div class="link">
-	<input class="form-control" readonly value={data.shareUrl} aria-label="Share link" onfocus={(e) => e.currentTarget.select()} />
-	<button class="btn" type="button" onclick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
-	<a class="btn" href="/share/{list.share_token}" target="_blank" rel="noopener">View list</a>
+<div class="tabs" role="tablist" aria-label="List sections">
+	{#each TABS as [id, label], i (id)}
+		<button
+			type="button"
+			role="tab"
+			id="tab-{id}"
+			aria-selected={tab === id}
+			aria-controls="panel-{id}"
+			tabindex={tab === id ? 0 : -1}
+			onclick={() => pick(id)}
+			onkeydown={(e) => tabKeys(e, i)}
+		>
+			{label}{#if count(id)}<span class="count">{count(id)}</span>{/if}
+		</button>
+	{/each}
 </div>
-<p class="note">{state} The list and its photos delete themselves after {data.keepUntil}.</p>
+
+<div id="panel-sharing" role="tabpanel" aria-labelledby="tab-sharing" hidden={tab !== 'sharing'}>
+<p class="note">Anyone with the link above can see this list. Add a PIN to lock it, or replace the link to shut out everyone who has the old one. The list and its photos delete themselves after {data.keepUntil}.</p>
 <div class="row">
 	<form method="POST" action="?/setPin" use:enhance={stay} class="row">
 		<input class="form-control pin" name="pin" inputmode="numeric" pattern="\d{'{'}4,8{'}'}" maxlength="8" placeholder={list.hasPin ? 'New PIN' : '4 to 8 digits'} aria-label="PIN" required />
@@ -90,8 +137,20 @@
 	<form method="POST" action="?/newLink" use:enhance={stay}><button class="btn" title="The old link stops working">Replace link</button></form>
 </div>
 
-<div class="Subhead Subhead--spaced"><h2>Items</h2></div>
-<ItemForm tiers={edition.tiers} listId={list.id} edition={edition.id} />
+</div>
+
+<div id="panel-wishes" role="tabpanel" aria-labelledby="tab-wishes" hidden={tab !== 'wishes'}>
+<div class="add edition" data-edition={edition.id}>
+	<div class="add-head">
+		<div class="add-pic"><Spot name="gift" /></div>
+		<div>
+			<h2>Add a wish</h2>
+			<p class="small muted">Paste a product link and we'll fill in the rest.</p>
+		</div>
+	</div>
+	<ItemForm tiers={edition.tiers} listId={list.id} edition={edition.id} />
+</div>
+{#if data.items.length}<h2 class="mine">Your wishes</h2>{:else}<p class="note empty">Your wishes show up here once you add them.</p>{/if}
 {#each edition.tiers as tier, t}
 	{@const items = shown.filter((i) => i.tier === t + 1)}
 	{#if items.length}
@@ -123,7 +182,9 @@
 	{/if}
 {/each}
 
-<div class="Subhead Subhead--spaced"><h2>Notes from visitors</h2></div>
+</div>
+
+<div id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" hidden={tab !== 'notes'}>
 {#each data.notes as n (n.id)}
 	<div class="item line">
 		<span class="name">
@@ -136,7 +197,9 @@
 	<p class="note">Notes people leave on your list show up here. Only you can see them.</p>
 {/each}
 
-<div class="Subhead Subhead--spaced"><h2>Page settings</h2></div>
+</div>
+
+<div id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden={tab !== 'settings'}>
 {#key list.options}
 	<form method="POST" action="?/save" use:enhance={stay} class="settings">
 		<div class="form-group">
@@ -194,8 +257,100 @@
 {:else}
 	<button type="button" class="btn btn-danger" onclick={() => (confirmDelete = true)}>Delete this list</button>
 {/if}
+</div>
 
 <style>
+	.top {
+		margin-bottom: 18px;
+	}
+	.top h1 {
+		margin: 4px 0 12px;
+		font-family: 'Anton', Impact, sans-serif;
+		font-size: 36px;
+		font-weight: 400;
+		line-height: 1.05;
+	}
+	.tabs {
+		display: flex;
+		gap: 4px;
+		overflow-x: auto;
+		margin-bottom: 18px;
+		padding: 4px;
+		border-radius: 999px;
+		background: #efe5d8;
+	}
+	.tabs button {
+		display: flex;
+		flex: 1 0 auto;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 8px 14px;
+		border: 0;
+		border-radius: 999px;
+		background: none;
+		color: var(--fg);
+		font-family: inherit;
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.tabs button:hover {
+		background: rgba(255, 255, 255, 0.6);
+	}
+	.tabs button[aria-selected='true'] {
+		background: #fffdf9;
+		box-shadow: 0 1px 2px rgba(59, 42, 37, 0.1), 0 4px 12px -6px rgba(59, 42, 37, 0.3);
+	}
+	.tabs button:focus-visible {
+		outline: 2px solid #5b9bd5;
+	}
+	.count {
+		min-width: 20px;
+		padding: 0 6px;
+		border-radius: 999px;
+		background: #e2574c;
+		color: #fff;
+		font-size: 12px;
+		line-height: 20px;
+	}
+	.add {
+		margin-bottom: 22px;
+		padding: 18px;
+		border: 2px solid #e2574c;
+		border-radius: 18px;
+		background: #fffdf9;
+		box-shadow: 0 1px 2px rgba(59, 42, 37, 0.06), 0 12px 30px -14px rgba(59, 42, 37, 0.35);
+		font-family: inherit;
+	}
+	.add[data-edition='birthday'] {
+		border-color: #e9806a;
+	}
+	.add-head {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 14px;
+	}
+	.add-head h2 {
+		margin: 0;
+		font-family: 'Anton', Impact, sans-serif;
+		font-size: 26px;
+		font-weight: 400;
+		line-height: 1.1;
+	}
+	.add-pic {
+		flex: none;
+		width: 52px;
+		height: 52px;
+	}
+	.mine {
+		margin: 0 0 4px;
+		font-size: 18px;
+	}
+	.empty {
+		text-align: center;
+	}
 	.link {
 		display: flex;
 		gap: 8px;
